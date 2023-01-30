@@ -9,6 +9,6 @@ Created on Wed Jan 25 15:11:00 2023
 for k, t in SC.items():
     plt.scatter(k,t)
 plt.show()
-test
+tes
 
 
