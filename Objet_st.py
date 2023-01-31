@@ -11,6 +11,57 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 
+class Inference:
+    def __init__(self,data,predict):
+        self.data=data
+        self.predict=predict
+        self.time_step = (self.data.index[1]-self.data.index[0]).days
+        if self.time_step == 29 or self.time_step == 30:
+            self.time_step = 31
+        self.completude = ~((self.data.index[1:]-self.data.index[:len(self.data)-1]).days > self.time_step).any()
+        self.nb_year = ((max(self.data.index)-min(self.data.index)).days++30*(self.time_step == 31))/365
+        self.date1=self.data.index[0]
+        self.dateM=self.data.index[-1]
+        
+    def _generate_dataframe(self,k):
+        from datetime import date        
+        self.date2=date.fromisoformat('20'+str(k)+'-12-01')
+        self.date3=date.fromisoformat('20'+str(k+1)+'-01-01')
+        self.date4=date.fromisoformat('20'+str(k+1)+'-12-01')
+        self.training=self.data.loc[self.date1:self.date2,]
+        self.test=self.data.loc[self.date3:self.date4,]
+        self.predict_test=self.predict.loc[self.date3:self.date4,]
+        
+    def likelihood(self,mus,sigma):
+        from scipy.stats import norm
+        from numpy import prod
+        liste=norm.pdf(self.test,mus,sigma)
+        self.lh=prod(liste)
+       
+    def Test(self):
+        #from datetime import date
+        import numpy as np
+        d1=int(self.date1.strftime('%Y'))-2000
+        d2=int(self.dateM.strftime('%Y'))-2000
+        Results=[]
+        for k in np.arange(d1+1,d2):
+            
+            self._generate_dataframe(k)           
+            SI=Signal(self.training,12)
+            
+            SI.diagnostic()
+            SI.auto_correlation()
+            if SI.param_s > 1:
+                SI.SARIMA_model()
+            else:
+                SI.ARIMA_model()
+            
+            Results.append([sum(abs(SI.prediction-self.test).dropna()),100*(sum(abs(SI.prediction-self.test).dropna())/sum(self.test)),sum(abs(self.predict_test-self.test).dropna())])
+        
+        Results=pd.DataFrame(Results,columns=['model','% erreur model','predict'], index=2000+np.arange(d1+2,d2+1))
+        Results['Model/predict']=Results['model']/Results['predict']
+        self.fit=Results
+
 class Signal:
     
     def __init__(self, data, forecast):
@@ -76,7 +127,7 @@ class Signal:
             i = i+1
         
         j = 0
-        while abs(PACF[j]) > Reject_value[j] and j < (len(PACF)-1):
+        while abs(PACF[j]) > Reject_value[1] and j < (len(PACF)-1):
             j = j+1
            
         print('AC: significative until order: '+str(i-1))
@@ -92,13 +143,7 @@ class Signal:
             print('These values can be changed using \'.parameter(p,q)\'.')
             self.param_p = j-1
             self.param_q = i-1
-        
-    def parameter(self, p, d, q, s):
-        self.param_p = p
-        self.param_q = q
-        self.param_d = d
-        self.param_s = s
-    
+            
     def ARIMA_model(self):
         from statsmodels.tsa.arima.model import ARIMA
         
@@ -168,8 +213,11 @@ Previ = pd.read_csv('/home/dcollot/Bureau/Biogaran/prevision.csv', parse_dates=T
 index_r = int(len(CSP['Code M'])*random.random())
 CSP_test = CSP[CSP['Code M'] == CSP['Code M'][index_r]]['Ventes CSP']
 Previ_test = Previ[Previ['Code M'] == CSP['Code M'][index_r]]['Prévision M-1']
+
+Test=Inference(CSP_test,Previ_test)
+Test.Test()
             
-SI = Signal(CSP_test, 72)
+SI = Signal(CSP_test, 10)
 SI.diagnostic()
 SI.get_trend()
 SI.auto_correlation()
@@ -180,14 +228,18 @@ if SI.param_s > 1:
 else:
     SI.ARIMA_model()
 
-plt.plot(SI.data)
-plt.plot(SI.prediction)
+plt.plot(SI.data,color='red')
+plt.plot(SI.prediction,color='blue',linestyle=':')
 # Prediction interval, Naive forecast sigma(t)=sigma*sqrt(t); seasonal naive sigma(t)=sigma*sqrt(floor((t-1)/T)+1)
 plt.fill_between(SI.prediction.index,
-                 SI.prediction+1.96*SI.sigma*np.sqrt(np.floor((np.arange(len(SI.prediction))-1)/12)+1),
-                 SI.prediction-1.96*SI.sigma*np.sqrt(np.floor((np.arange(len(SI.prediction))-1)/12)+1), alpha=0.5)
-plt.plot(Previ_test)    
-plt.show()       
+                 SI.prediction+1*SI.sigma*np.sqrt(np.floor((np.arange(len(SI.prediction))-1)/12)+1),
+                 SI.prediction-1*SI.sigma*np.sqrt(np.floor((np.arange(len(SI.prediction))-1)/12)+1), color='blue', alpha=0.2)
+plt.plot(Previ_test.loc[SI.data.index[-1]:SI.prediction.index[-1]],color='green',linestyle=':')    
+plt.legend(['Data','Prediction','70% prediction interval','Biogaran Prediction'],bbox_to_anchor=(1.5, 1))
+plt.title( CSP['Code M'][index_r])
+plt.show()    
+
+Test.fit   
 
 # ########################## Future Objet Operation ##############################
 
