@@ -172,6 +172,10 @@ class Multi_Signal:
         Index_fc=[self.data.index[-1]+(n+1)*self.data.index.freq for n in range(self.forecast) ]
         
         fc=pd.DataFrame(fc,columns=self.variable,index=Index_fc)
+        
+        self.sigma=[pow(results.sigma_u_mle.loc[u,u],0.5) for u in self.variable]
+        self.covar=results.sigma_u_mle
+        
         if self.got_trend:
             self.predict=fc
             print('Je rajoute les trends plus tard.')
