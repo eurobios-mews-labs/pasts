@@ -5,13 +5,10 @@ Created on Thu Jan 26 14:48:34 2023
 
 @author: dcollot
 """
-
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import random
 
-class Inference:
+class Inference:   
     def __init__(self,data,predict):
         self.data=data
         self.predict=predict
@@ -62,6 +59,126 @@ class Inference:
         Results['Model/predict']=Results['model']/Results['predict']
         self.fit=Results
 
+class Multi_Signal:
+    def __init__(self, data, forecast):
+        
+        self.data = data
+
+        self.forecast = forecast
+        self.time_step = (self.data.index[1]-self.data.index[0]).days
+        if self.time_step == 29 or self.time_step == 30:
+            self.time_step = 31
+        self.completude = ~((self.data.index[1:]-self.data.index[:len(self.data)-1]).days > self.time_step).any()
+        if 1-self.completude:
+            print('The time step is not regular. The accuracy of the ARIMA method can be lower.')
+        else:
+            if self.time_step == 31:
+                self.data.index.freq = 'MS'
+            elif self.time_step == 1:
+                self.data.index.freq = 'D'
+            elif self.time_step == 365:
+                self.data.index.freq = 'A'
+        
+        self.nb_year = ((max(self.data.index)-min(self.data.index)).days++30*(self.time_step == 31))/365
+        self.maxlag=int((self.nb_year//1)-1)
+        
+        self.variable=list(self.data.columns)
+        
+        self.got_trend = 0
+        
+        self.param_p = 1
+        self.param_q = 1
+        self.param_d = 0
+        self.param_s = 1
+        
+    def Granger_test(self,signi=0.05):
+        from statsmodels.tsa.stattools import grangercausalitytests
+        
+        self.Granger=pd.DataFrame(np.zeros((len(self.variable),len(self.variable))),columns=self.variable,index=self.variable)
+        for i in self.variable:
+            for j in self.variable:        
+                test_res=grangercausalitytests(self.data[[i,j]],maxlag=self.maxlag,verbose=False)
+                p_val=[round(test_res[i+1][0]['ssr_chi2test'][1],4) for i in range(self.maxlag)]
+                self.Granger.loc[i,j]=min(p_val)
+                
+        for k in self.variable:
+            if (self.Granger[k]>signi).all() and (self.Granger.loc[k]>signi).all():
+                print(k+' is not correlated with other variables and is therefore removed.')
+                self.variable.remove(k)
+    
+    def Coint_test(self):
+        from statsmodels.tsa.vector_ar.vecm import coint_johansen
+        out=coint_johansen(self.data[self.variable],-1,0)
+        cv=out.trace_stat_crit_vals[:,1]
+        tra=out.trace_stat
+
+        print('The famous Johansen Cointegration test:')
+        for k in range(len(self.variable)):
+            if cv[k]<tra[k]:
+                print(self.variable[k]+' is significant')
+            else:
+                print(self.variable[k]+' is not significant')
+    
+    def detrend(self):
+        self.detrend_signals=pd.DataFrame(np.zeros((len(self.data.index),len(self.variable))),columns=self.variable,index=self.data.index)      
+        self.trend_linear=pd.DataFrame(np.zeros((len(self.data.index),len(self.variable))),columns=self.variable,index=self.data.index)      
+        self.trend_periodic=pd.DataFrame(np.zeros((len(self.data.index),len(self.variable))),columns=self.variable,index=self.data.index)      
+        for k in range(len(self.variable)):
+            SI=Signal(self.data[k],0)
+            SI.remove('linear')
+            self.detrend_signals[k]=SI.data
+            self.trend_periodic[k]=SI.trend_period
+            self.trend_linear[k]=SI.trend_linear
+            
+            SI.diagnostic()
+        self.got_trend=1
+            
+    def VAR(self,verbose=False):
+        from statsmodels.tsa.api import VAR
+                
+        if ~self.got_trend:
+            print('The VAR model requires data with no trend. Be sure you check it before making inference.')
+        
+        model=VAR(self.data[self.variable])
+        
+        secure=1
+        h=0
+        AIC={}
+        while secure==1 :
+            try: 
+                AIC.update({h:model.fit(h).aic})
+                h=h+1
+            except:
+                secure=0
+            if h>self.maxlag:
+                secure=0
+
+        # Méthode automatique avec un tableau moche
+        # x=model.select_order(maxlags=(h-1))
+        # x.summary()
+        # print(x.summary())
+                
+        results=model.fit(min(AIC,key=AIC.get))           
+        if verbose:
+           print(results.summary()) 
+           
+        # from statsmodels.stats.stattools import durbin_watson
+        # out=durbin_watson(results.resid) ## Varie de 0 à 4, 2 signifie pas de correlation, 0 une correlation positive et 4 une corrélation négative.
+        # for k in range(len(self.variable)):
+        #     print(self.variable[k]+' :'+str(-1*(out[k]-2)/2)) ## transformé pour avoir des valeurs cohérente avec un coefficient de corrélation.
+        
+        fc=results.forecast(self.data[self.variable].iloc[-self.maxlag:].values,steps=self.forecast)
+        
+        Index_fc=[self.data.index[-1]+(n+1)*self.data.index.freq for n in range(self.forecast) ]
+        
+        fc=pd.DataFrame(fc,columns=self.variable,index=Index_fc)
+        if self.got_trend:
+            self.predict=fc
+            print('Je rajoute les trends plus tard.')
+            # fc=fc+self.trend_linear+self.trend_periodic
+        else: 
+            self.predict=fc                                                      
+
 class Signal:
     
     def __init__(self, data, forecast):
@@ -92,6 +209,7 @@ class Signal:
     def diagnostic(self):
         from statsmodels.tsa.stattools import adfuller
         p_val_0 = adfuller(self.data)[1]
+        print('\n'+self.data.name+':')
         print('ADF test: p_val='+str(p_val_0))
         if p_val_0 < 0.05:
             print(' Data are stationnary')
@@ -106,10 +224,12 @@ class Signal:
             print('ADF test after 12 months shift: p_val='+str(p_val_12))
             if p_val_12 < 0.05:
                 self.param_s = 12
+        print('\n')
 
     def auto_correlation(self):
         from statsmodels.tsa.stattools import pacf, acf
         from scipy.stats import chi2
+        import numpy as np
         
         PACF = pacf(self.data)
         ACF_val = acf(self.data, qstat=True)[0]
@@ -204,45 +324,7 @@ class Signal:
         if not (method in ['linear', 'periodic', 'both']):
             print("Method unknown, please use 'linear', 'periodic' or 'both'.")
 
-
-# ########################### Test ###########################
-
-CSP = pd.read_csv('/home/dcollot/Bureau/Biogaran/CSP.csv', parse_dates=True, index_col='Période')
-Previ = pd.read_csv('/home/dcollot/Bureau/Biogaran/prevision.csv', parse_dates=True, index_col='Période')
-
-index_r = int(len(CSP['Code M'])*random.random())
-CSP_test = CSP[CSP['Code M'] == CSP['Code M'][index_r]]['Ventes CSP']
-Previ_test = Previ[Previ['Code M'] == CSP['Code M'][index_r]]['Prévision M-1']
-
-Test=Inference(CSP_test,Previ_test)
-Test.Test()
-            
-SI = Signal(CSP_test, 10)
-SI.diagnostic()
-SI.get_trend()
-SI.auto_correlation()
-
-# SI.parameter(1,0,1,12)
-if SI.param_s > 1:
-    SI.SARIMA_model()
-else:
-    SI.ARIMA_model()
-
-plt.plot(SI.data,color='red')
-plt.plot(SI.prediction,color='blue',linestyle=':')
-# Prediction interval, Naive forecast sigma(t)=sigma*sqrt(t); seasonal naive sigma(t)=sigma*sqrt(floor((t-1)/T)+1)
-plt.fill_between(SI.prediction.index,
-                 SI.prediction+1*SI.sigma*np.sqrt(np.floor((np.arange(len(SI.prediction))-1)/12)+1),
-                 SI.prediction-1*SI.sigma*np.sqrt(np.floor((np.arange(len(SI.prediction))-1)/12)+1), color='blue', alpha=0.2)
-plt.plot(Previ_test.loc[SI.data.index[-1]:SI.prediction.index[-1]],color='green',linestyle=':')    
-plt.legend(['Data','Prediction','70% prediction interval','Biogaran Prediction'],bbox_to_anchor=(1.5, 1))
-plt.title( CSP['Code M'][index_r])
-plt.show()    
-
-Test.fit   
-
 # ########################## Future Objet Operation ##############################
-
 
 class Operation:
     
