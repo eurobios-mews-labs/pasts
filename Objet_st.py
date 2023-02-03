@@ -35,7 +35,7 @@ class Inference:
         liste=norm.pdf(self.test,mus,sigma)
         self.lh=prod(liste)
        
-    def Test(self):
+    def Test(self,trend=0):
         #from datetime import date
         import numpy as np
         d1=int(self.date1.strftime('%Y'))-2000
@@ -45,8 +45,10 @@ class Inference:
             
             self._generate_dataframe(k)           
             SI=Signal(self.training,12)
-            
             SI.diagnostic()
+            if trend==1:
+                SI.get_trend('linear')
+                SI.remove('both')
             SI.auto_correlation()
             if SI.param_s > 1:
                 SI.SARIMA_model()
@@ -123,16 +125,27 @@ class Multi_Signal:
         self.detrend_signals=pd.DataFrame(np.zeros((len(self.data.index),len(self.variable))),columns=self.variable,index=self.data.index)      
         self.trend_linear=pd.DataFrame(np.zeros((len(self.data.index),len(self.variable))),columns=self.variable,index=self.data.index)      
         self.trend_periodic=pd.DataFrame(np.zeros((len(self.data.index),len(self.variable))),columns=self.variable,index=self.data.index)      
-        for k in range(len(self.variable)):
+        for k in self.variable:
             SI=Signal(self.data[k],0)
-            SI.remove('linear')
+            SI.get_trend('linear')
+            SI.remove('both')
             self.detrend_signals[k]=SI.data
             self.trend_periodic[k]=SI.trend_period
             self.trend_linear[k]=SI.trend_linear
-            
-            SI.diagnostic()
         self.got_trend=1
             
+    def retrend(self,fc):
+        if self.got_trend==1:
+            fd=fc
+            for k in self.variable:
+                Period=self.trend_periodic[k][0:12]
+                Period.index=[t.strftime("%m") for t in Period.index]
+                step=self.trend_linear[k][1]-self.trend_linear[k][0]
+                for i in range(len(fc)):
+                    ID=fc[k].index[i].strftime("%m")
+                    fd[k][i]=fc[k][i]+i*step+Period.loc[ID]
+        return(fd)
+    
     def VAR(self,verbose=False):
         from statsmodels.tsa.api import VAR
                 
@@ -177,9 +190,7 @@ class Multi_Signal:
         self.covar=results.sigma_u_mle
         
         if self.got_trend:
-            self.predict=fc
-            print('Je rajoute les trends plus tard.')
-            # fc=fc+self.trend_linear+self.trend_periodic
+            self.predict=self.retrend(fc)
         else: 
             self.predict=fc                                                      
 
@@ -275,6 +286,8 @@ class Signal:
         results = model.fit()
         self.prediction = results.predict(start=len(self.data)-2, end=self.forecast)
         self.sigma = pow(results.params['sigma2'], 0.5)
+        if self.got_trend:
+            self.prediction=self.retrend(self.prediction)
         
     def SARIMA_model(self):
         from statsmodels.tsa.statespace.sarimax import SARIMAX
@@ -282,6 +295,9 @@ class Signal:
         model = SARIMAX(self.data, order=(self.param_p, self.param_d, self.param_q), seasonal_order=(self.param_p, self.param_d, self.param_q, self.param_s))
         results = model.fit()
         self.prediction = results.predict(start=len(self.data)-2, end=self.forecast)
+        if self.got_trend:
+            self.prediction=self.retrend(self.prediction)
+        
         self.sigma = pow(results.params['sigma2'], 0.5)
     
     def get_trend(self, method='rolling mean'):
@@ -327,17 +343,17 @@ class Signal:
 
         if not (method in ['linear', 'periodic', 'both']):
             print("Method unknown, please use 'linear', 'periodic' or 'both'.")
-
-# ########################## Future Objet Operation ##############################
-
-class Operation:
-    
-    def __init__(self):
-        self.op = 0
-        
-    def removing(self):
-        ...
-        
-    def adding(self):
-        ...
-    
+            
+    def retrend(self,fc):
+        if self.got_trend==1:
+            fd=fc
+            Period=self.trend_period[0:12]
+            Period.index=[t.strftime("%m") for t in Period.index]
+            step=self.trend_linear[1]-self.trend_linear[0]
+            for i in range(len(fc)):
+               ID=fc.index[i].strftime("%m")
+               if self.trend_linear_removed:
+                   fd[i]=fd[i]+i*step+self.trend_linear[0]
+               if self.trend_period_removed:
+                   fd[i]=fd[i]+Period.loc[ID]
+        return(fd)
