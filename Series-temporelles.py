@@ -18,13 +18,16 @@ CSP = pd.read_csv('/home/dcollot/Bureau/Biogaran/CSP.csv', parse_dates=True, ind
 Previ = pd.read_csv('/home/dcollot/Bureau/Biogaran/prevision.csv', parse_dates=True, index_col='Période')
 Det = pd.read_csv('/home/dcollot/Bureau/Biogaran/depos.csv',parse_dates=True,index_col='Période')
 
-k=Det['Code M'].unique()[15]
-Det_test=Det[Det['Code M']==k]
-Det2=Det_test[['CERP Rhin Rhône Med', 'IVRYLAB', 'CERP St Etienne','CERP Bretagne Nord','PHAR', 'EVOLUPHARM']]
+# k=Det['Code M'].unique()[15]
+# Det_test=Det[Det['Code M']==k]
+# Det2=Det_test[['CERP Rhin Rhône Med', 'IVRYLAB', 'CERP St Etienne','CERP Bretagne Nord','PHAR', 'EVOLUPHARM']]
 
 index_r = int(len(CSP['Code M'])*random.random())
 CSP_test = CSP[CSP['Code M'] == CSP['Code M'][index_r]]['Ventes CSP']
 Previ_test = Previ[Previ['Code M'] == CSP['Code M'][index_r]]['Prévision M-1']
+Det_test=Det[Det['Code M']==CSP['Code M'][index_r]]
+Det2=Det_test[['CERP Rhin Rhône Med', 'IVRYLAB', 'CERP St Etienne','CERP Bretagne Nord','PHARMAR', 'EVOLUPHARM']]
+
 
 Test=st.Inference(CSP_test,Previ_test)
 Test.Test(1)
