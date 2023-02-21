@@ -1,5 +1,41 @@
 # Toolbox for Time Series
 
+
+This packages aims to structure the way time series analysis and forecasting is done. 
+
+
+**Low code** module for expert modeler
+
+
+It is built on top of several module 
+
+* Scipy and statsmodel for testing 
+* Scipy for signal processing
+* Darts for forecasting, which is itself an aggregator of 
+  * scikit-learn
+  * tenserflow
+  * prophet
+  * etc.
+
+Provide insight and **unified framework** for 
+
+* Statistical models (eg. ARIMA) mainly provided by stats model
+* Statistical testing
+* Signal processing
+* Machine learning and deeplearning models
+* Drift evaluation
+
+
+
+**Target user**
+- eurobios engineer specialized in machine learning
+
+**Target usage**
+
+- sharing knowledge between modeler, statistician, data analyst
+- build 5 minutes baseline
+- Aggregate knowledge on signal based on processing, models and decomposition
+
 ## Install notice
 
 ## Approach
