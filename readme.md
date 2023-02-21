@@ -3,10 +3,11 @@
 
 This packages aims to structure the way time series analysis and forecasting is done. 
 
-Low code module for expert modeler
+
+**Low code** module for expert modeler
 
 
-It is built on top of several methods 
+It is built on top of several module 
 
 * Scipy and statsmodel for testing 
 * Scipy for signal processing
@@ -16,15 +17,24 @@ It is built on top of several methods
   * prophet
   * etc.
 
-Provide insight and unified canon for 
+Provide insight and **unified framework** for 
 
 * Statistical models (eg. ARIMA) mainly provided by stats model
 * Statistical testing
 * Signal processing
 * Machine learning and deeplearning models
+* Drift evaluation
 
-For who ? 
 
+
+**Target user**
+- eurobios engineer specialized in machine learning
+
+**Target usage**
+
+- sharing knowledge between modeler, statistician, data analyst
+- build 5 minutes baseline
+- Aggregate knowledge on signal based on processing, models and decomposition
 
 ## Install notice
 
