@@ -120,3 +120,18 @@ class Signal:
         best_model.fit(data_train)
         forecast = model.predict(len(data_test))
         print('model {} obtains MAPE: {:.2f}%'.format(model, mape(data_test, forecast)))
+
+
+# from seriesTemporelles.test_rawya.signal_ import Signal
+#
+# if __name__ == '__main__':
+#     series = AirPassengersDataset().load()
+#     dt = pd.DataFrame(series.values())
+#     dt.rename(columns={0: 'passengers'})
+#     dt.index = series.time_index
+#     signal = Signal(dt)
+#     signal.profiling()
+#     signal.plot_signal()
+#     signal.plot_smoothing()
+#     signal.adf_test(0.05)
+

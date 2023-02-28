@@ -114,19 +114,19 @@ class Operation_on_ts:
     def acf(self, times_series):
         autocorrelation_plot(times_series)
 
-    def differencing(self):
+    # def differencing(self):
+    #
+    # def seasonal_adjustment(self):
 
-    def seasonal_adjustment(self):
-
-class Evaluation_Metrics:
-    def __init__(self):
-
-    def mean_absolute_error(self):
-
-    def mean_squared_eError(self):
-
-    def root_mean_squared_error(self):
-
-
-
-
+# class Evaluation_Metrics:
+#     def __init__(self):
+#
+#     def mean_absolute_error(self):
+#
+#     def mean_squared_eError(self):
+#
+#     def root_mean_squared_error(self):
+#
+#
+#
+#
