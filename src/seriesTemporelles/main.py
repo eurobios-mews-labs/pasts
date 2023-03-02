@@ -1,9 +1,7 @@
 from darts.datasets import AirPassengersDataset
 import pandas as pd
-from seriesTemporelles.signals.uniSignal import UniSignal
-from statsmodels.tsa.stattools import kpss
-
-
+from seriesTemporelles.signals.uniVariate import UniSignal
+from seriesTemporelles.signals.multiVariates import MultiSignal
 
 if __name__ == '__main__':
     series = AirPassengersDataset().load()
@@ -15,4 +13,4 @@ if __name__ == '__main__':
     signal.plot_signal()
     signal.plot_smoothing()
     report = signal.is_stationary(test_stat=kpss, regression='c', nlags="auto")
-
+    # multi = MultiSignal(data)
