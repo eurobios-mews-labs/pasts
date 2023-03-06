@@ -14,7 +14,6 @@ default = false
 secondary = true
 
 [tool.poetry.dependencies]
-my-packages = {path = "https://gitlab.eurobios.com/escb/series-temporelles/-/blob/series_biblio/dist/seriestemporelles-0.0.1.tar.gz"}
 python = "^3.8"
 pandas="^1"
 darts= "0.23.1"
