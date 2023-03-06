@@ -1,7 +1,9 @@
 from darts.datasets import AirPassengersDataset
 import pandas as pd
-from seriesTemporelles.signals.uniVariate import UniSignal
-from seriesTemporelles.signals.multiVariates import MultiSignal
+from seriestemporelles.signals.uniVariate import UniSignal
+from seriestemporelles.signals.multiVariates import MultiSignal
+from statsmodels.tsa.stattools import acf, adfuller, grangercausalitytests, kpss, pacf
+
 
 if __name__ == '__main__':
     series = AirPassengersDataset().load()

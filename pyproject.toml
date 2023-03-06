@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "seriestemporelles"
+version = "0.0.1"
+description = "unified collections of models to analyze a time series"
+authors = ["Rawya Zreik <rzreik@eurobios.com>"]
+readme = "README.md"
+packages = [{include = "seriestemporelles", from = "src"}]
+keywords = ["times series", "forcasting", "analysis", "machine learning"]
+
+[[tool.poetry.source]]
+name = "gitlab"
+url = "https://gitlab.eurobios.com"
+default = false
+secondary = true
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pandas="^1"
+darts= "0.23.1"
+statsmodels = "0.13.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
