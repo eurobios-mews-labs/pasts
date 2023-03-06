@@ -1,3 +1,0 @@
-pandas >= 1.5.1
-darts >= 0.23.1
-statsmodels >= 0.13.5
