@@ -23,7 +23,8 @@ and analysis methods for time series in one unified library
 #### Installation 
 The package can be installed by :
 ```bash
-pip install seriestemporelles
+python -m pip install https://gitlab.eurobios.com/escb/series-temporelles.git
+
 ```
 
 ### Usage and example
