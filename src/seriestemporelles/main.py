@@ -1,7 +1,7 @@
 from darts.datasets import AirPassengersDataset
 import pandas as pd
-from seriestemporelles.signals.uniVariate import UniSignal
-from seriestemporelles.signals.multiVariates import MultiSignal
+from seriestemporelles.signal.uniVariate import UnivariateSignal
+from seriestemporelles.signal.multiVariates import Multi_variate
 from statsmodels.tsa.stattools import acf, adfuller, grangercausalitytests, kpss, pacf
 
 
@@ -10,7 +10,7 @@ if __name__ == '__main__':
     dt = pd.DataFrame(series.values())
     dt.rename(columns={0: 'passengers'})
     dt.index = series.time_index
-    signal = UniSignal(dt)
+    signal = UnivariateSignal(dt)
     signal.profiling()
     signal.plot_signal()
     signal.plot_smoothing()

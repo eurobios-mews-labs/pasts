@@ -1,8 +1,8 @@
-from seriestemporelles.signals.signal_abs import Signals
+from seriestemporelles.signal.signal_abstract import Signals
 import pandas as pd
 
 
-class MultiSignal(Signals):
+class Multi_variate(Signals):
     def __init__(self, data):
         self.data = data
 

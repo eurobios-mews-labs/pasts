@@ -1,4 +1,4 @@
 __version__ = '0.0.1'
-#from seriestemporelles.signals.signal_abs import Signals
-from seriestemporelles.signals.uniVariate import UniSignal
-from seriestemporelles.signals.multiVariates import MultiSignal
+#from seriestemporelles.signal.signal_abs import Signals
+from seriestemporelles.signal.uniVariate import UnivariateSignal
+from seriestemporelles.signal.multiVariates import Multi_variate

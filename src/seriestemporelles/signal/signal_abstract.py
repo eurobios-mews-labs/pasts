@@ -1,8 +1,7 @@
-from abc import ABC, abstractmethod
-from typing import Dict, Any, Union, Tuple
-from statsmodels.tsa.stattools import adfuller
+from abc import ABC
+from typing import Dict, Any
+
 import pandas as pd
-from pandas import DataFrame, Series
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.stattools import kpss
 
