@@ -2,7 +2,6 @@ from darts.datasets import AirPassengersDataset
 import pandas as pd
 from seriestemporelles.signal.uniVariate import UnivariateSignal
 from seriestemporelles.signal.multiVariates import Multi_variate
-from statsmodels.tsa.stattools import acf, adfuller, grangercausalitytests, kpss, pacf
 
 
 if __name__ == '__main__':
