@@ -32,14 +32,14 @@ python3 -m pip install git+https://gitlab.eurobios.com/escb/series-temporelles.g
 ```python
 from darts.datasets import AirPassengersDataset
 import pandas as pd
-from seriestemporelles import UnivariateSignal
+from seriestemporelles import SignalAnalysis
 from statsmodels.tsa.stattools import acf, adfuller, grangercausalitytests, kpss, pacf
 
 series = AirPassengersDataset().load()
 dt = pd.DataFrame(series.values())
 dt.rename(columns={0: 'passengers'})
 dt.index = series.time_index
-signal = UnivariateSignal(dt)
+signal = SignalAnalysis(dt)
 signal.profiling()
 signal.plot_signal()
 signal.plot_smoothing()

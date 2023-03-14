@@ -1,1 +1,1 @@
-from seriestemporelles.signal.signal_abstract import Signals
+from seriestemporelles.signal.proporties_signal import Proprieties
