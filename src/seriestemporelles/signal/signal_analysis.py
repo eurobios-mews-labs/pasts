@@ -25,7 +25,8 @@ class SignalAnalysis(Proprieties):
     def split_cv(self, timestamp, n_splits=None):
         self.train_set = self.data.loc[self.data.index <= timestamp]
         self.test_set = self.data.loc[self.data.index > timestamp]
-
+        print("Split applied on :",timestamp)
+        
         if n_splits != None:
             time_series_cross_validation = TimeSeriesSplit(n_splits=n_splits)
 

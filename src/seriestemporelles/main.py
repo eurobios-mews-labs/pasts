@@ -2,6 +2,7 @@ import pandas as pd
 from darts.datasets import AirPassengersDataset
 from darts.models import AutoARIMA, Prophet, ExponentialSmoothing
 import sys
+sys.path.append("/home/said/Bureau/TimeSeries/series-temporelles/src/")
 
 from seriestemporelles.signal.signal_analysis import SignalAnalysis
 from seriestemporelles.signal.visualization import Visualisation
