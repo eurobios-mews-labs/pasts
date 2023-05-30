@@ -37,8 +37,7 @@ class SignalAnalysis(Proprieties):
 
             self.ts_cv = time_series_cross_validation.split(self.train_set)
 
-    def apply_model(self, model,
-                    parameters: list = {}, gridsearch: bool = False):
+    def apply_model(self, model, gridsearch=False, parameters=None):
 
         if gridsearch:
             best_model, best_parametres = model.gridsearch(parameters=parameters,
@@ -51,6 +50,10 @@ class SignalAnalysis(Proprieties):
         model.fit(series_train)
         forecast = model.predict(len(self.test_set))
         forecast = forecast.univariate_values()
+        
+        print('model {} obtains R2 score: {:.2f}'.format(model, r2_score(self.test_set.values, forecast) ))
+        # print('model {} obtains RMSE score: {:.2f}'.format(model, np.sqrt(mean_squared_error(
+        #                                                                      self.test_set.values, forecast)) ))
 
         # Save
         self.model_scores[str(model)] = {'R2_score': r2_score(self.test_set.values, forecast).round(2),
