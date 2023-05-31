@@ -1,12 +1,9 @@
 import pandas as pd
 from darts.datasets import AirPassengersDataset
 from darts.models import AutoARIMA, Prophet, ExponentialSmoothing
-import sys
-sys.path.append("/home/said/Bureau/TimeSeries/series-temporelles/src/")
 
 from seriestemporelles.signal.signal_analysis import SignalAnalysis
 from seriestemporelles.signal.visualization import Visualisation
-
 
 if __name__ == '__main__':
     series = AirPassengersDataset().load()
@@ -19,28 +16,25 @@ if __name__ == '__main__':
     signal = SignalAnalysis(dt)
     signal.profiling()
     report = signal.apply_test('stationary', 'kpss')
-    
-    
-    #------ ML -----
-    timestamp = '1958'
+
+    # ------ ML -----
+    timestamp = '1957-06-01'
     signal.split_cv(timestamp=timestamp)
-    
-    pred_arima = signal.apply_model(AutoARIMA())
+
+    signal.apply_model(AutoARIMA())
     signal.apply_model(Prophet())
     signal.apply_model(ExponentialSmoothing())
-    
-    
 
+    # --- get result ---
+    print(signal.scores)
+    Exp_Smoothing_pred = signal.results['ExponentialSmoothing()']['predictions']
 
-
-
-#%% Visualisation
+# %% Visualisation
 import matplotlib.pyplot as plt
 
 df_predictions = signal.test_set.copy()
-for model in signal.model_results.keys() : 
-    df_predictions.loc[:,model] = signal.model_results[model]['predictions']
-            
+for model in signal.results.keys():
+    df_predictions.loc[:, model] = signal.results[model]['predictions']
 
 plt.plot(signal.train_set, c='gray')
 plt.plot(df_predictions['AutoARIMA()'], c='blue')
@@ -49,5 +43,3 @@ plt.plot(df_predictions['ExponentialSmoothing()'], c='red')
 
 cols = df_predictions.columns.drop('passengers')
 plt.legend(cols)
-
-
