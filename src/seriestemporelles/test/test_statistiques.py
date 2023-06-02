@@ -1,6 +1,6 @@
 import pandas as pd
 
-from seriestemporelles.signal.proporties_signal import Proprieties, dict_test_uni_variate, dict_test_multi_variate
+from seriestemporelles.signal.proporties_signal import Properties, dict_test_uni_variate, dict_test_multi_variate
 
 
 def check_arguments(
@@ -19,7 +19,7 @@ class TestStatistics:
 
     def __init__(self, data: pd.DataFrame):
         self.data = data
-        self.proprieties = Proprieties(self.data)
+        self.proprieties = Properties(self.data)
 
     def statistical_test(self, type_test: str, test_stat_name: str,
                          *args, **kwargs) -> object:

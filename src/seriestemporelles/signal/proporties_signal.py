@@ -13,7 +13,7 @@ dict_test_uni_variate = {'stationary': ['kpss', 'adfuller'],
 dict_test_multi_variate = {'causality': ['grangercausalitytests']}
 
 
-class Proprieties(ABC):
+class Properties(ABC):
     def __init__(self, data: pd.DataFrame):
         self.data = data
         self.series = TimeSeries.from_dataframe(self.data)
@@ -78,7 +78,3 @@ class Proprieties(ABC):
 
     def is_seasonality(self, *args, **kwargs):
         return check_seasonality, check_seasonality(self.series, *args, **kwargs)
-
-    def causality(self, *args, **kwargs):
-        pass
-        # return check_seasonality.__name__, check_seasonality(self.series, *args, **kwargs)
