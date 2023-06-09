@@ -116,11 +116,11 @@ class MultiVariateSignalAnalysis(Properties):
             model = best_model
 
         series_train = TimeSeries.from_dataframe(self.train_set.reset_index(),
-                                                 time_col='time',
+                                                 time_col=self.train_set.index.name,
                                                  value_cols=self.train_set.columns.to_list())
 
         series_test = TimeSeries.from_dataframe(self.test_set.reset_index(),
-                                                time_col='time',
+                                                time_col=self.test_set.index.name,
                                                 value_cols=self.test_set.columns.to_list())
 
         model.fit(series_train)
