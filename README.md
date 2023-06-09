@@ -65,17 +65,7 @@ print(signal.scores)
 exp_smoothing_pred = signal.results['ExponentialSmoothing']['predictions']
 
 #---  Vizualise the predictions ---
-df_predictions = signal.test_set.copy()
-for model in signal.results.keys():
-    df_predictions.loc[:, model] = signal.results[model]['predictions']
-
-plt.plot(signal.data, c='gray')
-plt.plot(df_predictions['AutoARIMA'], c='blue')
-plt.plot(df_predictions['Prophet'], c='green')
-plt.plot(df_predictions['ExponentialSmoothing'], c='red')
-
-cols = df_predictions.columns#.drop('passengers')
-plt.legend(cols)
+signal.show_predictions()
 
 
 ```
