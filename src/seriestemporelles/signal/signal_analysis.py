@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+
 from sklearn.metrics import r2_score, mean_squared_error
+from darts.metrics import mape, smape, mae
 
 from seriestemporelles.signal.proporties_signal import Properties
 from seriestemporelles.test.test_statistiques import TestStatistics
@@ -53,8 +56,6 @@ class SignalAnalysis(Properties):
         forecast = forecast.univariate_values()
 
         print('model {} obtains R2 score: {:.2f}'.format(model, r2_score(self.test_set.values, forecast)), '\n')
-        # print('model {} obtains RMSE score: {:.2f}'.format(model, np.sqrt(mean_squared_error(
-        #                                                                      self.test_set.values, forecast)) ))
 
         # Save
         model_name = model.__class__.__name__
@@ -68,15 +69,26 @@ class SignalAnalysis(Properties):
                                     }
         return forecast
 
+    def show_predictions(self):
+        df_predictions = self.test_set.copy()
+        for model in self.results.keys():
+            df_predictions.loc[:, model] = self.results[model]['predictions']
+
+        labels = ['Actuals']
+        plt.plot(self.data, c='gray')
+        for model in self.results.keys():
+            plt.plot(df_predictions[model])
+            labels.append(model)
+
+        plt.legend(labels)
+        plt.show()
 
 
 class MultiVariateSignalAnalysis(Properties):
-
     def __init__(self, data: pd.DataFrame):
         super().__init__(data)
         self.scores = {}
         self.results = {}
-
 
     def split_cv(self, timestamp, n_splits_cv=None):
         self.train_set = self.data.loc[self.data.index <= timestamp]
@@ -103,28 +115,42 @@ class MultiVariateSignalAnalysis(Properties):
                                                            forecast_horizon=12)
             model = best_model
 
-
         series_train = TimeSeries.from_dataframe(self.train_set.reset_index(),
                                                  time_col='time',
                                                  value_cols=self.train_set.columns.to_list())
 
+        series_test = TimeSeries.from_dataframe(self.test_set.reset_index(),
+                                                time_col='time',
+                                                value_cols=self.test_set.columns.to_list())
+
         model.fit(series_train)
         forecast = model.predict(len(self.test_set))
-        forecast = forecast.values()
-
-        # print('model {} obtains R2 score: {:.2f}'.format(model, r2_score(self.test_set.values, forecast)), '\n')
-        # # print('model {} obtains RMSE score: {:.2f}'.format(model, np.sqrt(mean_squared_error(
-        # #                                                                      self.test_set.values, forecast)) ))
 
         # # Save
         model_name = model.__class__.__name__
-        # self.scores[model_name] = {'R2_score': r2_score(self.test_set.values, forecast).round(2),
-        #                            'RMSE_score': np.sqrt(
-        #                                mean_squared_error(self.test_set.values, forecast)).round(2),
-        #                            }
+
+        print("Model", model_name, "trained on train set", ' -- ', "MAPE = {:.2f}%".format(mape(series_test, forecast)))
 
         self.results[model_name] = {'test_set': self.test_set,
-                                    'predictions': pd.DataFrame(forecast,
+                                    'predictions': pd.DataFrame(forecast.values(),
                                                                 columns=self.train_set.columns.to_list()),
                                     }
-        print("Model",model_name,"applied on train set")
+        self.scores[model_name] = {'MAPE_score': mape(series_test, forecast).round(2),
+                                   }
+
+    def show_predictions(self):
+        n_signals = self.test_set.shape[1]
+        cmap = plt.cm.get_cmap("hsv", n_signals + 1)
+
+        labels = ['Actuals_s' + str(i) for i in range(1, n_signals + 1)]
+        plt.plot(self.data, c='gray')
+        i = 0
+        for model in self.results.keys():
+            pred = self.results[model]['predictions']
+            pred.index = self.test_set.index
+            plt.plot(pred, c=cmap(i))
+            list_model_label = [model + '_s' + str(i) for i in range(1, n_signals + 1)]
+            labels += list_model_label
+            i += 1
+        plt.legend(labels)
+        plt.show()

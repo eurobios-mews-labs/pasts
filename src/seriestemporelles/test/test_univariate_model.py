@@ -1,6 +1,4 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
 
 from darts.datasets import AirPassengersDataset
 from darts.models import AutoARIMA, Prophet, ExponentialSmoothing
@@ -34,14 +32,4 @@ if __name__ == '__main__':
     exp_smoothing_pred = signal.results['ExponentialSmoothing']['predictions']
 
     # ---  Vizualise the predictions ---
-    df_predictions = signal.test_set.copy()
-    for model in signal.results.keys():
-        df_predictions.loc[:, model] = signal.results[model]['predictions']
-
-    plt.plot(signal.data, c='gray')
-    plt.plot(df_predictions['AutoARIMA'], c='blue')
-    plt.plot(df_predictions['Prophet'], c='green')
-    plt.plot(df_predictions['ExponentialSmoothing'], c='red')
-
-    cols = df_predictions.columns
-    plt.legend(cols)
+    signal.show_predictions()
