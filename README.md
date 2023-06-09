@@ -65,7 +65,7 @@ print(signal.scores)
 exp_smoothing_pred = signal.results['ExponentialSmoothing']['predictions']
 
 #---  Vizualise the predictions ---
-MultiVariateSignal.show_predictions()
+signal.show_predictions()
 
 
 ```
