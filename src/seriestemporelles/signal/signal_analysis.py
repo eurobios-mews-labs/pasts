@@ -43,14 +43,17 @@ class SignalAnalysis(Properties):
 
     def apply_model(self, model, gridsearch=False, parameters=None):
 
+        series_train = TimeSeries.from_dataframe(self.train_set)
+
         if gridsearch:
-            best_model, best_parameters = model.gridsearch(parameters=parameters,
-                                                           series=self.train_set,
+            if parameters == None : raise Exception("please enter the parameters")
+            print('Performing the gridsearch for', model.__class__.__name__, '...')
+            best_model, best_parameters, _ = model.gridsearch(parameters=parameters,
+                                                           series=series_train,
                                                            start=0.5,
-                                                           forecast_horizon=12)
+                                                           forecast_horizon=5)
             model = best_model
 
-        series_train = TimeSeries.from_dataframe(self.train_set)
         model.fit(series_train)
         forecast = model.predict(len(self.test_set))
         forecast = forecast.univariate_values()
@@ -67,7 +70,6 @@ class SignalAnalysis(Properties):
         self.results[model_name] = {'test_set': self.test_set,
                                     'predictions': forecast,
                                     }
-        return forecast
 
     def show_predictions(self):
         df_predictions = self.test_set.copy()

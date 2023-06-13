@@ -2,6 +2,8 @@ import pandas as pd
 
 from darts.datasets import AirPassengersDataset
 from darts.models import AutoARIMA, Prophet, ExponentialSmoothing
+from darts.utils.utils import ModelMode, SeasonalityMode
+
 from seriestemporelles.signal.signal_analysis import SignalAnalysis
 from seriestemporelles.signal.visualization import Visualisation
 
@@ -25,7 +27,11 @@ if __name__ == '__main__':
 
     signal.apply_model(AutoARIMA())
     signal.apply_model(Prophet())
-    signal.apply_model(ExponentialSmoothing())
+
+    param_grid = {'trend': [ModelMode.ADDITIVE, ModelMode.MULTIPLICATIVE, ModelMode.NONE],
+                  'seasonal': [SeasonalityMode.ADDITIVE, SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.NONE],
+                  }
+    signal.apply_model(ExponentialSmoothing(), gridsearch=True, parameters=param_grid)
 
     # --- get some results ---
     print(signal.scores)
