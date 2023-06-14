@@ -36,6 +36,7 @@ if __name__ == '__main__':
     # --- get some results ---
     print(signal.scores)
     exp_smoothing_pred = signal.results['ExponentialSmoothing']['predictions']
+    exp_smoothing_params = signal.results['ExponentialSmoothing']['best_parameters']
 
     # ---  Vizualise the predictions ---
     signal.show_predictions()

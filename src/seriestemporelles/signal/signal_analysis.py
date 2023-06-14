@@ -46,12 +46,12 @@ class SignalAnalysis(Properties):
         series_train = TimeSeries.from_dataframe(self.train_set)
 
         if gridsearch:
-            if parameters == None : raise Exception("please enter the parameters")
+            if parameters == None: raise Exception("please enter the parameters")
             print('Performing the gridsearch for', model.__class__.__name__, '...')
             best_model, best_parameters, _ = model.gridsearch(parameters=parameters,
-                                                           series=series_train,
-                                                           start=0.5,
-                                                           forecast_horizon=5)
+                                                              series=series_train,
+                                                              start=0.5,
+                                                              forecast_horizon=5)
             model = best_model
 
         model.fit(series_train)
@@ -66,9 +66,11 @@ class SignalAnalysis(Properties):
                                    'RMSE_score': np.sqrt(
                                        mean_squared_error(self.test_set.values, forecast)).round(2),
                                    }
+        if gridsearch == False: best_parameters = "default"
 
         self.results[model_name] = {'test_set': self.test_set,
                                     'predictions': forecast,
+                                    'best_parameters' : best_parameters
                                     }
 
     def show_predictions(self):
