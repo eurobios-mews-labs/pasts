@@ -46,7 +46,7 @@ class SignalAnalysis(Properties):
         series_train = TimeSeries.from_dataframe(self.train_set)
 
         if gridsearch:
-            if parameters == None: raise Exception("please enter the parameters")
+            if parameters == None: raise Exception("Please enter the parameters")
             print('Performing the gridsearch for', model.__class__.__name__, '...')
             best_model, best_parameters, _ = model.gridsearch(parameters=parameters,
                                                               series=series_train,
@@ -70,7 +70,7 @@ class SignalAnalysis(Properties):
 
         self.results[model_name] = {'test_set': self.test_set,
                                     'predictions': forecast,
-                                    'best_parameters' : best_parameters
+                                    'best_parameters': best_parameters
                                     }
 
     def show_predictions(self):
@@ -112,13 +112,6 @@ class MultiVariateSignalAnalysis(Properties):
 
     def apply_model(self, model, gridsearch=False, parameters=None):
 
-        if gridsearch:
-            best_model, best_parameters = model.gridsearch(parameters=parameters,
-                                                           series=self.train_set,
-                                                           start=0.5,
-                                                           forecast_horizon=12)
-            model = best_model
-
         series_train = TimeSeries.from_dataframe(self.train_set.reset_index(),
                                                  time_col=self.train_set.index.name,
                                                  value_cols=self.train_set.columns.to_list())
@@ -126,6 +119,15 @@ class MultiVariateSignalAnalysis(Properties):
         series_test = TimeSeries.from_dataframe(self.test_set.reset_index(),
                                                 time_col=self.test_set.index.name,
                                                 value_cols=self.test_set.columns.to_list())
+
+        if gridsearch:
+            if parameters == None: raise Exception("Please enter the parameters")
+            print('[MultiVariate] - Performing the gridsearch for', model.__class__.__name__, '...')
+            best_model, best_parameters, _ = model.gridsearch(parameters=parameters,
+                                                              series=series_train,
+                                                              start=0.5,
+                                                              forecast_horizon=5)
+            model = best_model
 
         model.fit(series_train)
         forecast = model.predict(len(self.test_set))
@@ -135,12 +137,16 @@ class MultiVariateSignalAnalysis(Properties):
 
         print("Model", model_name, "trained on train set", ' -- ', "MAPE = {:.2f}%".format(mape(series_test, forecast)))
 
+        self.scores[model_name] = {'MAPE_score': mape(series_test, forecast).round(2),
+                                   }
+
+        if gridsearch == False: best_parameters = "default"
+
         self.results[model_name] = {'test_set': self.test_set,
                                     'predictions': pd.DataFrame(forecast.values(),
                                                                 columns=self.train_set.columns.to_list()),
+                                    'best_parameters': best_parameters
                                     }
-        self.scores[model_name] = {'MAPE_score': mape(series_test, forecast).round(2),
-                                   }
 
     def show_predictions(self):
         n_signals = self.test_set.shape[1]

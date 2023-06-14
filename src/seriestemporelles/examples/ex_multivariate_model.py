@@ -23,8 +23,14 @@ if __name__ == '__main__':
     timestamp = 30
     MultiVariateSignal.split_cv(timestamp=timestamp)
 
-    MultiVariateSignal.apply_model(VARIMA())
     MultiVariateSignal.apply_model(XGBModel(lags=[-1, -2, -3]))
+
+    param_grid = {'trend': ['n', 'c', 't', 'ct'],
+                  'seasonal': [SeasonalityMode.ADDITIVE, SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.NONE],
+                  }
+
+    MultiVariateSignal.apply_model(VARIMA()) #, gridsearch=True, parameters=param_grid
+
 
     # ---  Vizualise the predictions ---
     MultiVariateSignal.show_predictions()
