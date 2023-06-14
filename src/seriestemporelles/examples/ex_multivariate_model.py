@@ -1,9 +1,8 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
 
 from darts.datasets import AustralianTourismDataset
 from darts.models import VARIMA, XGBModel
+
 from seriestemporelles.signal.signal_analysis import MultiVariateSignalAnalysis
 from seriestemporelles.signal.visualization import Visualisation
 
@@ -25,12 +24,10 @@ if __name__ == '__main__':
 
     MultiVariateSignal.apply_model(XGBModel(lags=[-1, -2, -3]))
 
-    param_grid = {'trend': ['n', 'c', 't', 'ct'],
-                  'seasonal': [SeasonalityMode.ADDITIVE, SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.NONE],
-                  }
+    param_grid = {'trend': [None, 'c'],
+                  'q': [0, 1, 2]}
 
-    MultiVariateSignal.apply_model(VARIMA()) #, gridsearch=True, parameters=param_grid
-
+    MultiVariateSignal.apply_model(VARIMA(), gridsearch=True, parameters=param_grid)
 
     # ---  Vizualise the predictions ---
     MultiVariateSignal.show_predictions()

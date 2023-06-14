@@ -6,10 +6,9 @@ from sklearn.metrics import r2_score, mean_squared_error
 from darts.metrics import mape, smape, mae
 
 from seriestemporelles.signal.proporties_signal import Properties
-from seriestemporelles.test.test_statistiques import TestStatistics
+from seriestemporelles.signal.test_statistiques import TestStatistics
 from sklearn.model_selection import TimeSeriesSplit
 from darts import TimeSeries
-
 
 class SignalAnalysis(Properties):
 
