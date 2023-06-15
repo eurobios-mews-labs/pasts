@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import *
 
 import pandas as pd
@@ -13,10 +13,22 @@ dict_test_uni_variate = {'stationary': ['kpss', 'adfuller'],
 dict_test_multi_variate = {'causality': ['grangercausalitytests']}
 
 
-class Properties(ABC):
+class Signal(ABC):
     def __init__(self, data: pd.DataFrame):
         self.data = data
         self.series = TimeSeries.from_dataframe(self.data)
+
+    #@abstractmethod
+    def split_cv(self, timestamp, n_splits_cv=None):
+        pass
+
+    #@abstractmethod
+    def apply_model(self):
+        pass
+
+    #@abstractmethod
+    def show_predictions(self):
+        pass
 
     @property
     def n_columns(self):

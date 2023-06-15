@@ -5,12 +5,12 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score, mean_squared_error
 from darts.metrics import mape, smape, mae
 
-from seriestemporelles.signal.proporties_signal import Properties
+from seriestemporelles.signal.signal import Signal
 from seriestemporelles.signal.test_statistiques import TestStatistics
 from sklearn.model_selection import TimeSeriesSplit
 from darts import TimeSeries
 
-class SignalAnalysis(Properties):
+class SignalAnalysis(Signal):
 
     def __init__(self, data: pd.DataFrame):
         super().__init__(data)
@@ -87,7 +87,7 @@ class SignalAnalysis(Properties):
         plt.show()
 
 
-class MultiVariateSignalAnalysis(Properties):
+class MultiVariateSignalAnalysis(Signal):
     def __init__(self, data: pd.DataFrame):
         super().__init__(data)
         self.scores = {}

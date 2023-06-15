@@ -1,6 +1,6 @@
 import pandas as pd
 
-from seriestemporelles.signal.proporties_signal import Properties, dict_test_uni_variate, dict_test_multi_variate
+from seriestemporelles.signal.signal import Signal, dict_test_uni_variate, dict_test_multi_variate
 
 
 def check_arguments(
@@ -19,16 +19,16 @@ class TestStatistics:
 
     def __init__(self, data: pd.DataFrame):
         self.data = data
-        self.proprieties = Properties(self.data)
+        self.properties = Signal(self.data)
 
     def statistical_test(self, type_test: str, test_stat_name: str,
                          *args, **kwargs) -> object:
-        if self.proprieties:
+        if self.properties:
             dict_test = dict_test_uni_variate
         else:
             dict_test = dict_test_multi_variate
 
-        check_arguments(not self.proprieties.is_uni_variate,
+        check_arguments(not self.properties.is_uni_variate,
                         "Only uni_variate time series can be tested")
 
         check_arguments(
@@ -41,8 +41,8 @@ class TestStatistics:
             f"Select correct test from: {dict_test[type_test]}.",
         )
         if type_test == 'stationary':
-            return self.proprieties.is_stationary(test_name=test_stat_name, *args, **kwargs)
+            return self.properties.is_stationary(test_name=test_stat_name, *args, **kwargs)
         elif type_test == 'seasonality':
-            return self.proprieties.is_seasonality(*args, **kwargs)
+            return self.properties.is_seasonality(*args, **kwargs)
         else:
-            return self.proprieties.causality(*args, **kwargs)
+            return self.properties.causality(*args, **kwargs)
