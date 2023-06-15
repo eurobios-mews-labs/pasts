@@ -58,11 +58,16 @@ signal.split_cv(timestamp=timestamp)
 
 signal.apply_model(AutoARIMA())
 signal.apply_model(Prophet())
-signal.apply_model(ExponentialSmoothing())
+
+param_grid = {'trend': [ModelMode.ADDITIVE, ModelMode.MULTIPLICATIVE, ModelMode.NONE],
+              'seasonal': [SeasonalityMode.ADDITIVE, SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.NONE],
+              }
+signal.apply_model(ExponentialSmoothing(), gridsearch=True, parameters=param_grid)
 
 # --- get some results ---
 print(signal.scores)
 exp_smoothing_pred = signal.results['ExponentialSmoothing']['predictions']
+exp_smoothing_params = signal.results['ExponentialSmoothing']['best_parameters']
 
 #---  Vizualise the predictions ---
 signal.show_predictions()
