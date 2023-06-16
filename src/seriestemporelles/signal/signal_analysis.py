@@ -10,13 +10,32 @@ from seriestemporelles.signal.test_statistiques import TestStatistics
 from sklearn.model_selection import TimeSeriesSplit
 from darts import TimeSeries
 
+
 class SignalAnalysis(Signal):
 
     def __init__(self, data: pd.DataFrame):
         super().__init__(data)
         self.report = super().profiling()
-        self.scores = {}
-        self.results = {}
+        self.__train_set = None
+        self.__test_set = None
+        self.__scores = {}
+        self.__results = {}
+
+    @property
+    def train_set(self):
+        return self.__train_set
+
+    @property
+    def test_set(self):
+        return self.__test_set
+
+    @property
+    def scores(self):
+        return self.__scores
+
+    @property
+    def results(self):
+        return self.__results
 
     def apply_test(self, type_test: str, test_stat_name: str, *args, **kwargs):
         call_test = TestStatistics(self.data)
@@ -25,24 +44,24 @@ class SignalAnalysis(Signal):
         return self.report
 
     def split_cv(self, timestamp, n_splits_cv=None):
-        self.train_set = self.data.loc[self.data.index <= timestamp]
-        self.test_set = self.data.loc[self.data.index > timestamp]
+        self.__train_set = self.data.loc[self.data.index <= timestamp]
+        self.__test_set = self.data.loc[self.data.index > timestamp]
         print("Split applied on :", timestamp, '\n')
 
         if n_splits_cv != None:
             time_series_cross_validation = TimeSeriesSplit(n_splits=n_splits_cv)
 
-            for fold, (train_index, test_index) in enumerate(time_series_cross_validation.split(self.train_set)):
+            for fold, (train_index, test_index) in enumerate(time_series_cross_validation.split(self.__train_set)):
                 print("Fold: {}".format(fold))
                 print("TRAIN indices:", train_index[0], " -->", train_index[-1])
                 print("TEST  indices:", test_index[0], "-->", test_index[-1])
                 print("\n")
 
-            self.ts_cv = time_series_cross_validation.split(self.train_set)
+            self.ts_cv = time_series_cross_validation.split(self.__train_set)
 
     def apply_model(self, model, gridsearch=False, parameters=None):
 
-        series_train = TimeSeries.from_dataframe(self.train_set)
+        series_train = TimeSeries.from_dataframe(self.__train_set)
 
         if gridsearch:
             if parameters == None: raise Exception("Please enter the parameters")
@@ -54,32 +73,32 @@ class SignalAnalysis(Signal):
             model = best_model
 
         model.fit(series_train)
-        forecast = model.predict(len(self.test_set))
+        forecast = model.predict(len(self.__test_set))
         forecast = forecast.univariate_values()
 
-        print('model {} obtains R2 score: {:.2f}'.format(model, r2_score(self.test_set.values, forecast)), '\n')
+        print('model {} obtains R2 score: {:.2f}'.format(model, r2_score(self.__test_set.values, forecast)), '\n')
 
         # Save
         model_name = model.__class__.__name__
-        self.scores[model_name] = {'R2_score': r2_score(self.test_set.values, forecast).round(2),
-                                   'RMSE_score': np.sqrt(
-                                       mean_squared_error(self.test_set.values, forecast)).round(2),
-                                   }
+        self.__scores[model_name] = {'R2_score': r2_score(self.__test_set.values, forecast).round(2),
+                                     'RMSE_score': np.sqrt(
+                                         mean_squared_error(self.__test_set.values, forecast)).round(2),
+                                     }
         if gridsearch == False: best_parameters = "default"
 
-        self.results[model_name] = {'test_set': self.test_set,
-                                    'predictions': forecast,
-                                    'best_parameters': best_parameters
-                                    }
+        self.__results[model_name] = {'test_set': self.__test_set,
+                                      'predictions': forecast,
+                                      'best_parameters': best_parameters
+                                      }
 
     def show_predictions(self):
-        df_predictions = self.test_set.copy()
-        for model in self.results.keys():
-            df_predictions.loc[:, model] = self.results[model]['predictions']
+        df_predictions = self.__test_set.copy()
+        for model in self.__results.keys():
+            df_predictions.loc[:, model] = self.__results[model]['predictions']
 
         labels = ['Actuals']
         plt.plot(self.data, c='gray')
-        for model in self.results.keys():
+        for model in self.__results.keys():
             plt.plot(df_predictions[model])
             labels.append(model)
 
@@ -90,8 +109,16 @@ class SignalAnalysis(Signal):
 class MultiVariateSignalAnalysis(Signal):
     def __init__(self, data: pd.DataFrame):
         super().__init__(data)
-        self.scores = {}
-        self.results = {}
+        self.__scores = {}
+        self.__results = {}
+
+    @property
+    def scores(self):
+        return self.__scores
+
+    @property
+    def results(self):
+        return self.__results
 
     def split_cv(self, timestamp, n_splits_cv=None):
         self.train_set = self.data.loc[self.data.index <= timestamp]
@@ -141,11 +168,11 @@ class MultiVariateSignalAnalysis(Signal):
 
         if gridsearch == False: best_parameters = "default"
 
-        self.results[model_name] = {'test_set': self.test_set,
-                                    'predictions': pd.DataFrame(forecast.values(),
-                                                                columns=self.train_set.columns.to_list()),
-                                    'best_parameters': best_parameters
-                                    }
+        self.__results[model_name] = {'test_set': self.test_set,
+                                      'predictions': pd.DataFrame(forecast.values(),
+                                                                  columns=self.train_set.columns.to_list()),
+                                      'best_parameters': best_parameters
+                                      }
 
     def show_predictions(self):
         n_signals = self.test_set.shape[1]
@@ -154,8 +181,8 @@ class MultiVariateSignalAnalysis(Signal):
         labels = ['Actuals_s' + str(i) for i in range(1, n_signals + 1)]
         plt.plot(self.data, c='gray')
         i = 0
-        for model in self.results.keys():
-            pred = self.results[model]['predictions']
+        for model in self.__results.keys():
+            pred = self.__results[model]['predictions']
             pred.index = self.test_set.index
             plt.plot(pred, c=cmap(i))
             list_model_label = [model + '_s' + str(i) for i in range(1, n_signals + 1)]

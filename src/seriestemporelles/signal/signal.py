@@ -15,8 +15,11 @@ dict_test_multi_variate = {'causality': ['grangercausalitytests']}
 
 class Signal(ABC):
     def __init__(self, data: pd.DataFrame):
-        self.data = data
-        self.series = TimeSeries.from_dataframe(self.data)
+        self.__data = data
+
+    @property
+    def data(self):
+        return self.__data
 
     #@abstractmethod
     def split_cv(self, timestamp, n_splits_cv=None):
