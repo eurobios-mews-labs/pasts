@@ -1,0 +1,127 @@
+import copy
+
+from abc import ABC, abstractmethod, abstractproperty
+
+from pandas import MultiIndex
+
+from seriestemporelles.signal.metrics import root_mean_squared_error
+
+import pandas as pd
+from darts import TimeSeries
+
+
+class Model(ABC):
+    def __init__(self, signal: "Signal"):
+        self.__train_tseries = TimeSeries.from_dataframe(signal.train_data)
+        self.__signal = signal
+
+    @property
+    def signal(self):
+        return self.__signal
+
+    @property
+    def train_tseries(self):
+        return self.__train_tseries
+
+    @abstractmethod
+    def apply(self):
+        pass
+
+    @abstractmethod
+    def forecast(self):
+        pass
+
+
+class SimpleModel(Model):
+
+    def __init__(self, signal: "Signal"):
+        super().__init__(signal)
+
+    def apply(self, model, gridsearch=False, parameters=None):
+        if gridsearch:
+            if parameters is None:
+                raise Exception("Please enter the parameters")
+            print('Performing the gridsearch for', model.__class__.__name__, '...')
+            best_model, best_parameters, _ = model.gridsearch(parameters=parameters,
+                                                              series=self.train_tseries,
+                                                              start=0.5,
+                                                              forecast_horizon=5)
+            model = best_model
+        else:
+            best_parameters = "default"
+
+        model.fit(self.train_tseries)
+        forecast = model.predict(len(self.signal.test_data))
+
+        return {'predictions': forecast, 'best_parameters': best_parameters, 'scores': {}}
+
+    def forecast(self, model_, horizon):
+        model = copy.deepcopy(model_)
+        params = model.model_params
+        params = dict(params)
+        model_class = model.__class__
+        if model_class.__name__ not in self.signal.models.keys():
+            raise AttributeError(f'{model} has not been fitted.')
+        best_params = self.signal.models[model_class.__name__]['best_parameters']
+        if isinstance(best_params, dict):
+            for key in best_params.keys():
+                params[key] = best_params[key]
+            model_best = model_class(**params)
+        else:
+            model_best = model
+        if self.signal.properties['is_univariate']:
+            train_temp = TimeSeries.from_dataframe(self.signal.data)
+        else:
+            train_temp = TimeSeries.from_dataframe(self.signal.data.reset_index(),
+                                                   time_col=self.signal.data.index.name,
+                                                   value_cols=self.signal.data.columns.to_list())
+        model_best.fit(train_temp)
+        forecast = model_best.predict(horizon)
+        return forecast
+
+
+class AggregatedModel(Model):
+
+    def __init__(self, signal: "Signal"):
+        super().__init__(signal)
+
+    def apply(self, dict_models):
+        dict_pred = {model: self.signal.models[model]['predictions'].pd_dataframe().copy() for model in dict_models.keys()}
+        df_test = self.signal.test_data.copy()
+        weights = pd.DataFrame(index=MultiIndex.from_product([self.signal.test_data.index,
+                                                             self.signal.test_data.columns], names=['Date', 'Unité']),
+                               columns=list(dict_models.keys()))
+        weights.drop(self.signal.test_data.index[0], level=0, inplace=True)
+        for model in weights.columns:
+            df_pred = dict_pred[model]
+            for date in weights.index.get_level_values(0).unique():
+                df_pred_temp = df_pred[df_pred.index < date]
+                df_test_temp = df_test[df_test.index < date]
+                for ref in weights.index.get_level_values(1).unique():
+                    weights.loc[(date, ref)][model] = 1 / root_mean_squared_error(df_test_temp[ref], df_pred_temp[ref])
+        for i in weights.index:
+            weights.loc[i] = weights.loc[i] / (weights.loc[i].sum())
+        weights = weights.groupby('Unité')[list(dict_models.keys())].mean()
+
+        df_ag = pd.DataFrame(index=self.signal.models[list(dict_models.keys())[0]]['predictions'].time_index,
+                             columns=self.signal.models[list(dict_models.keys())[0]]['predictions'].columns)
+        for ref in df_ag.columns:
+            res = [0 for i in df_ag.index]
+            for model in dict_models.keys():
+                res += self.signal.models[model]['predictions'][ref].values() * weights.loc[ref, model]
+            df_ag[ref] = res
+        return {'predictions': TimeSeries.from_dataframe(df_ag), 'weights': weights, 'models': dict_models, 'scores': {}}
+
+    def forecast(self):
+        dict_models = self.signal.models['AggregatedModel']['models']
+        df_ag = pd.DataFrame(index=self.signal.models[list(dict_models.keys())[0]]['forecast'].time_index,
+                             columns=self.signal.models[list(dict_models.keys())[0]]['forecast'].columns)
+        for ref in df_ag.columns:
+            res = [0 for i in df_ag.index]
+            for model in dict_models.keys():
+                res += self.signal.models[model]['forecast'][ref].values() * self.signal.models['AggregatedModel'][
+                    'weights'].loc[ref, model]
+            df_ag[ref] = res
+        return TimeSeries.from_dataframe(df_ag)
+
+

@@ -37,11 +37,7 @@ class SignalAnalysis(Signal):
     def results(self):
         return self.__results
 
-    def apply_test(self, type_test: str, test_stat_name: str, *args, **kwargs):
-        call_test = TestStatistics(self.data)
-        test_output = call_test.statistical_test(type_test, test_stat_name, *args, **kwargs)
-        self.report[type_test] = test_output
-        return self.report
+
 
     def split_cv(self, timestamp, n_splits_cv=None):
         self.__train_set = self.data.loc[self.data.index <= timestamp]
