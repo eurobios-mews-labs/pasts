@@ -4,7 +4,7 @@ from darts import TimeSeries
 import warnings
 from sklearn.metrics import r2_score, mean_squared_error
 from darts.metrics import mape, smape, mae
-from pasts import check_arguments
+from pasts.test_statistiques import check_arguments
 
 
 def root_mean_squared_error(y_true, y_pred, *args, **kwargs):

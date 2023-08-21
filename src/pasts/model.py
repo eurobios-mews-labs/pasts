@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from pandas import MultiIndex
 
-from pasts import root_mean_squared_error
+from pasts.metrics import root_mean_squared_error
 
 import pandas as pd
 from darts import TimeSeries

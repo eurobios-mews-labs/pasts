@@ -4,10 +4,10 @@ from abc import ABC
 
 import pandas as pd
 
-from pasts import Model, AggregatedModel
-from pasts import TestStatistics, dict_test
-from pasts import Validation
-from pasts import Metrics
+from pasts.model import Model, AggregatedModel
+from pasts.test_statistiques import TestStatistics, dict_test
+from pasts.validation import Validation
+from pasts.metrics import Metrics
 
 
 def profiling(data: pd.DataFrame):
