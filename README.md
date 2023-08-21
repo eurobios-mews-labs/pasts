@@ -36,8 +36,8 @@ import matplotlib.pyplot as plt
 from darts.datasets import AirPassengersDataset
 from darts.models import AutoARIMA, Prophet, ExponentialSmoothing
 
-from PASTS.signal.signal_analysis import SignalAnalysis
-from PASTS.signal.visualization import Visualisation
+from pasts import SignalAnalysis
+from pasts import Visualisation
 
 # ---- Load data ---
 series = AirPassengersDataset().load()

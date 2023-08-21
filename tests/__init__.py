@@ -1,4 +1,4 @@
-from PASTS import __version__
+from pasts import __version__
 
 
 def test_version():

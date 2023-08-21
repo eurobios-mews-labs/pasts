@@ -4,8 +4,8 @@ from darts.datasets import AirPassengersDataset, AustralianTourismDataset
 from darts.models import AutoARIMA, Prophet, ExponentialSmoothing, XGBModel, VARIMA
 from darts.utils.utils import ModelMode, SeasonalityMode
 
-from PASTS.signal.signal import Signal
-from PASTS.signal.visualization import Visualisation
+from pasts import Signal
+from pasts import Visualisation
 
 
 if __name__ == '__main__':
