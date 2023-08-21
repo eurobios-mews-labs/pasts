@@ -1,16 +1,14 @@
-import copy
-
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 
 from pandas import MultiIndex
 
-from seriestemporelles.signal.metrics import root_mean_squared_error
+from PASTS.signal.metrics import root_mean_squared_error
 
 import pandas as pd
 from darts import TimeSeries
 
 
-class Model(ABC):
+class ModelAbstract(ABC):
     def __init__(self, signal: "Signal"):
         self.__train_tseries = TimeSeries.from_dataframe(signal.train_data)
         self.__signal = signal
@@ -28,11 +26,11 @@ class Model(ABC):
         pass
 
     @abstractmethod
-    def forecast(self):
+    def compute_final_estimator(self):
         pass
 
 
-class SimpleModel(Model):
+class Model(ModelAbstract):
 
     def __init__(self, signal: "Signal"):
         super().__init__(signal)
@@ -53,40 +51,33 @@ class SimpleModel(Model):
         model.fit(self.train_tseries)
         forecast = model.predict(len(self.signal.test_data))
 
-        return {'predictions': forecast, 'best_parameters': best_parameters, 'scores': {}}
+        return {'predictions': forecast, 'best_parameters': best_parameters, 'scores': {'unit_wise': {},
+                                                                                        'time_wise': {}},
+                'estimator': model}
 
-    def forecast(self, model_, horizon):
-        model = copy.deepcopy(model_)
-        params = model.model_params
-        params = dict(params)
-        model_class = model.__class__
-        if model_class.__name__ not in self.signal.models.keys():
-            raise AttributeError(f'{model} has not been fitted.')
-        best_params = self.signal.models[model_class.__name__]['best_parameters']
-        if isinstance(best_params, dict):
-            for key in best_params.keys():
-                params[key] = best_params[key]
-            model_best = model_class(**params)
-        else:
-            model_best = model
+    def compute_final_estimator(self, model_name):
+        if model_name not in self.signal.models.keys():
+            raise AttributeError(f'{model_name} has not been fitted.')
+        model = self.signal.models[model_name]['estimator']
+
         if self.signal.properties['is_univariate']:
             train_temp = TimeSeries.from_dataframe(self.signal.data)
         else:
             train_temp = TimeSeries.from_dataframe(self.signal.data.reset_index(),
                                                    time_col=self.signal.data.index.name,
                                                    value_cols=self.signal.data.columns.to_list())
-        model_best.fit(train_temp)
-        forecast = model_best.predict(horizon)
-        return forecast
+        model.fit(train_temp)
+        return model
 
 
-class AggregatedModel(Model):
+class AggregatedModel(ModelAbstract):
 
     def __init__(self, signal: "Signal"):
         super().__init__(signal)
 
     def apply(self, dict_models):
-        dict_pred = {model: self.signal.models[model]['predictions'].pd_dataframe().copy() for model in dict_models.keys()}
+        dict_pred = {model: self.signal.models[model][
+            'predictions'].pd_dataframe().copy() for model in dict_models.keys()}
         df_test = self.signal.test_data.copy()
         weights = pd.DataFrame(index=MultiIndex.from_product([self.signal.test_data.index,
                                                              self.signal.test_data.columns], names=['Date', 'Unité']),
@@ -110,9 +101,10 @@ class AggregatedModel(Model):
             for model in dict_models.keys():
                 res += self.signal.models[model]['predictions'][ref].values() * weights.loc[ref, model]
             df_ag[ref] = res
-        return {'predictions': TimeSeries.from_dataframe(df_ag), 'weights': weights, 'models': dict_models, 'scores': {}}
+        return {'predictions': TimeSeries.from_dataframe(df_ag), 'weights': weights, 'models': dict_models,
+                'scores': {}}
 
-    def forecast(self):
+    def compute_final_estimator(self):
         dict_models = self.signal.models['AggregatedModel']['models']
         df_ag = pd.DataFrame(index=self.signal.models[list(dict_models.keys())[0]]['forecast'].time_index,
                              columns=self.signal.models[list(dict_models.keys())[0]]['forecast'].columns)
@@ -123,5 +115,3 @@ class AggregatedModel(Model):
                     'weights'].loc[ref, model]
             df_ag[ref] = res
         return TimeSeries.from_dataframe(df_ag)
-
-

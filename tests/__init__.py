@@ -1,4 +1,4 @@
-from seriestemporelles import __version__
+from PASTS import __version__
 
 
 def test_version():

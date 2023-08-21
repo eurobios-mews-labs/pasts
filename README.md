@@ -36,23 +36,23 @@ import matplotlib.pyplot as plt
 from darts.datasets import AirPassengersDataset
 from darts.models import AutoARIMA, Prophet, ExponentialSmoothing
 
-from seriestemporelles.signal.signal_analysis import SignalAnalysis
-from seriestemporelles.signal.visualization import Visualisation
+from PASTS.signal.signal_analysis import SignalAnalysis
+from PASTS.signal.visualization import Visualisation
 
-#---- Load data ---
+# ---- Load data ---
 series = AirPassengersDataset().load()
 dt = pd.DataFrame(series.values())
 dt.rename(columns={0: 'passengers'}, inplace=True)
 dt.index = series.time_index
 
-#---- Vizualise data ---
+# ---- Vizualise data ---
 Visualisation(dt).plot_signal()
 Visualisation(dt).plot_smoothing()
 signal = SignalAnalysis(dt)
 signal.profiling()
 report = signal.apply_test('stationary', 'kpss')
 
-#---- Machine Learning ---
+# ---- Machine Learning ---
 timestamp = '1957-06-01'
 signal.split_cv(timestamp=timestamp)
 
@@ -69,7 +69,7 @@ print(signal.scores)
 exp_smoothing_pred = signal.results['ExponentialSmoothing']['predictions']
 exp_smoothing_params = signal.results['ExponentialSmoothing']['best_parameters']
 
-#---  Vizualise the predictions ---
+# ---  Vizualise the predictions ---
 signal.show_predictions()
 
 

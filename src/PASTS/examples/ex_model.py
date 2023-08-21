@@ -4,8 +4,8 @@ from darts.datasets import AirPassengersDataset, AustralianTourismDataset
 from darts.models import AutoARIMA, Prophet, ExponentialSmoothing, XGBModel, VARIMA
 from darts.utils.utils import ModelMode, SeasonalityMode
 
-from seriestemporelles.signal.signal import Signal
-from seriestemporelles.signal.visualization import Visualisation
+from PASTS.signal.signal import Signal
+from PASTS.signal.visualization import Visualisation
 
 
 if __name__ == '__main__':
@@ -42,6 +42,7 @@ if __name__ == '__main__':
 
     # --- Compute scores ---
     signal.compute_scores()
+    signal.compute_scores(axis=0)
 
     # ---  Visualize the predictions ---
     Visualisation(signal).show_predictions()
@@ -52,10 +53,10 @@ if __name__ == '__main__':
     Visualisation(signal).show_predictions()
 
     # --- Forecast ---
-    signal.forecast_aggregated(6)
-    # signal.forecast_simple(ExponentialSmoothing(), 6)
-    # signal.forecast_simple(AutoARIMA(), 6)
-    # signal.forecast_simple(Prophet(), 6)
+    signal.forecast("Prophet", 6)
+    signal.forecast("AggregatedModel", 6)
+    signal.forecast("AutoARIMA", 6)
+    signal.forecast("ExponentialSmoothing", 6)
     Visualisation(signal).show_forecast()
 
     # Multivariate
@@ -90,9 +91,9 @@ if __name__ == '__main__':
     Visualisation(signal_m).show_predictions()
 
     # --- Forecast ---
-    signal_m.forecast_aggregated(10)
-    # signal_m.forecast_simple(VARIMA(), 10)
-    # signal_m.forecast_simple(XGBModel(lags=[-1, -2, -3]), 10)
+    signal_m.forecast("AggregatedModel", 50)
+    signal_m.forecast("VARIMA", 10)
+    signal_m.forecast("XGBModel", 10)
     Visualisation(signal_m).show_forecast()
 
 

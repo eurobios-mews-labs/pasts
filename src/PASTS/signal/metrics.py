@@ -4,7 +4,7 @@ from darts import TimeSeries
 import warnings
 from sklearn.metrics import r2_score, mean_squared_error
 from darts.metrics import mape, smape, mae
-from seriestemporelles.signal.test_statistiques import check_arguments
+from PASTS.signal.test_statistiques import check_arguments
 
 
 def root_mean_squared_error(y_true, y_pred, *args, **kwargs):
@@ -29,7 +29,7 @@ class Metrics:
         self.dict_metrics_darts = {key: dict_metrics_darts[key] for key in list_metrics
                                    if key in dict_metrics_darts.keys()}
 
-    def scores_sklearn(self, model, axis=1):
+    def scores_sklearn(self, model, axis):
         df_pred = self.signal.models[model]['predictions'].pd_dataframe()
         df_test = self.signal.test_data.copy()
 
@@ -39,8 +39,8 @@ class Metrics:
 
         results = pd.DataFrame(index=df_pred.columns, columns=list(self.dict_metrics_sklearn.keys()))
         for col in df_pred.columns:
-            df_temp = pd.DataFrame(df_pred[col].copy())
-            df_temp['test'] = df_test[col].copy()
+            df_temp = pd.DataFrame(df_pred[col])
+            df_temp['test'] = df_test[col]
             for metric in self.dict_metrics_sklearn.keys():
                 if df_temp.isnull().sum().sum() != 0:
                     warnings.warn('Test set or predictions contain NaN values: they are deleted to compute the metrics',
@@ -70,7 +70,7 @@ class Metrics:
                     results.loc[col, metric] = self.dict_metrics_darts[metric](ts_test[col], ts_pred[col])
         return results
 
-    def compute_score(self, model: str, axis: int):
+    def compute_scores(self, model: str, axis):
         check_arguments(
             not self.signal.models,
             "Apply at least one model before computing scores.",
@@ -96,14 +96,19 @@ class Metrics:
             result = pd.concat([df_sk, df_darts], axis=1)
         return result
 
-    def compare_models(self):
+    def scores_comparison(self, axis):
+        if axis == 1:
+            score_type = 'unit_wise'
+        elif axis == 0:
+            score_type = 'time_wise'
+
         dict_metrics_comp = {}
         mod = list(self.signal.models.keys())[0]
-        ref = self.signal.models[mod]['scores']
+        ref = self.signal.models[mod]['scores'][score_type]
         for metric in ref.columns:
             df = pd.DataFrame(index=ref.index, columns=list(self.signal.models.keys()))
             for model in df.columns:
-                df[model] = self.signal.models[model]['scores'][metric]
+                df[model] = self.signal.models[model]['scores'][score_type][metric]
             dict_metrics_comp[metric] = df
         return dict_metrics_comp
 
