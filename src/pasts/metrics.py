@@ -30,8 +30,14 @@ class Metrics:
                                    if key in dict_metrics_darts.keys()}
 
     def scores_sklearn(self, model, axis):
+        if type(self.signal).__name__ == "DecomposedSignal":
+            if self.signal.got_trend == 1:
+                df_test = self.signal.retrend_uni(self.signal.test_data)
+            else:
+                df_test = self.signal.test_data.copy()
+        else:
+            df_test = self.signal.test_data.copy()
         df_pred = self.signal.models[model]['predictions'].pd_dataframe()
-        df_test = self.signal.test_data.copy()
 
         if axis == 0:
             df_pred = df_pred.transpose()
@@ -53,7 +59,13 @@ class Metrics:
         return results
 
     def scores_darts(self, model):
-        ts_test = TimeSeries.from_dataframe(self.signal.test_data)
+        if type(self.signal).__name__ == "DecomposedSignal":
+            if self.signal.got_trend == 1:
+                ts_test = TimeSeries.from_dataframe(self.signal.retrend_uni(self.signal.test_data))
+            else:
+                ts_test = self.signal.test_data.copy()
+        else:
+            ts_test = TimeSeries.from_dataframe(self.signal.test_data)
         ts_pred = self.signal.models[model]['predictions']
         results = pd.DataFrame(index=ts_pred.columns, columns=list(self.dict_metrics_darts.keys()))
         for col in ts_pred.columns:

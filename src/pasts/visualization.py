@@ -1,4 +1,5 @@
 import warnings
+from typing import Union
 
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -7,7 +8,7 @@ from pandas.plotting import autocorrelation_plot
 
 class Visualisation:
 
-    def __init__(self, signal: "Signal"):
+    def __init__(self, signal: Union["Signal", "DecomposedSignal"]):
         self.__signal = signal
 
     def plot_signal(self, **kwargs):
@@ -37,8 +38,14 @@ class Visualisation:
         n_signals = self.__signal.test_data.shape[1]
 
         labels = ['Actuals_s' + str(i) for i in range(1, n_signals + 1)]
-        ax.plot(self.__signal.data, c='gray')
-        for j, model in enumerate(self.__signal.models.keys()):
+        if type(self.__signal).__name__ == "DecomposedSignal":
+            if self.__signal.got_trend == 1:
+                ax.plot(self.__signal.data_raw, c='gray')
+            else:
+                ax.plot(self.__signal.data, c='gray')
+        else:
+            ax.plot(self.__signal.data, c='gray')
+        for model in self.__signal.models.keys():
             pred = pd.DataFrame(self.__signal.models[model]['predictions'].values())
             pred.columns = self.__signal.models[model]['predictions'].columns
             pred.index = self.__signal.models[model]['predictions'].time_index

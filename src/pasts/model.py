@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Union
 
 from pandas import MultiIndex
 
@@ -9,7 +10,7 @@ from darts import TimeSeries
 
 
 class ModelAbstract(ABC):
-    def __init__(self, signal: "Signal"):
+    def __init__(self, signal: Union["Signal", "DecomposedSignal"]):
         self.__train_tseries = TimeSeries.from_dataframe(signal.train_data)
         self.__signal = signal
 
@@ -50,6 +51,13 @@ class Model(ModelAbstract):
 
         model.fit(self.train_tseries)
         forecast = model.predict(len(self.signal.test_data))
+
+        if type(self.signal).__name__ == "DecomposedSignal":
+            if self.signal.got_trend == 1:
+                if self.signal.properties['is_univariate']:
+                    forecast = self.signal.retrend_uni(forecast)
+                else:
+                    forecast = self.signal.retrend_multi(forecast)
 
         return {'predictions': forecast, 'best_parameters': best_parameters, 'scores': {'unit_wise': {},
                                                                                         'time_wise': {}},
