@@ -33,7 +33,7 @@ class ModelAbstract(ABC):
 
 class Model(ModelAbstract):
 
-    def __init__(self, signal: "Signal"):
+    def __init__(self, signal: Union["Signal", "DecomposedSignal"]):
         super().__init__(signal)
 
     def apply(self, model, gridsearch=False, parameters=None):
@@ -52,13 +52,6 @@ class Model(ModelAbstract):
         model.fit(self.train_tseries)
         forecast = model.predict(len(self.signal.test_data))
 
-        if type(self.signal).__name__ == "DecomposedSignal":
-            if self.signal.got_trend == 1:
-                if self.signal.properties['is_univariate']:
-                    forecast = self.signal.retrend_uni(forecast)
-                else:
-                    forecast = self.signal.retrend_multi(forecast)
-
         return {'predictions': forecast, 'best_parameters': best_parameters, 'scores': {'unit_wise': {},
                                                                                         'time_wise': {}},
                 'estimator': model}
@@ -68,19 +61,19 @@ class Model(ModelAbstract):
             raise AttributeError(f'{model_name} has not been fitted.')
         model = self.signal.models[model_name]['estimator']
 
-        if self.signal.properties['is_univariate']:
-            train_temp = TimeSeries.from_dataframe(self.signal.data)
-        else:
-            train_temp = TimeSeries.from_dataframe(self.signal.data.reset_index(),
-                                                   time_col=self.signal.data.index.name,
-                                                   value_cols=self.signal.data.columns.to_list())
+        # if self.signal.properties['is_univariate']:
+        train_temp = TimeSeries.from_dataframe(self.signal.data)
+        # else:
+        #    train_temp = TimeSeries.from_dataframe(self.signal.data.reset_index(),
+        #                                           time_col=self.signal.data.index.name,
+        #                                           value_cols=self.signal.data.columns.to_list())
         model.fit(train_temp)
         return model
 
 
 class AggregatedModel(ModelAbstract):
 
-    def __init__(self, signal: "Signal"):
+    def __init__(self, signal: Union["Signal", "DecomposedSignal"]):
         super().__init__(signal)
 
     def apply(self, dict_models):
@@ -122,4 +115,5 @@ class AggregatedModel(ModelAbstract):
                 res += self.signal.models[model]['forecast'][ref].values() * self.signal.models['AggregatedModel'][
                     'weights'].loc[ref, model]
             df_ag[ref] = res
+
         return TimeSeries.from_dataframe(df_ag)

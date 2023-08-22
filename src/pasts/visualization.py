@@ -12,7 +12,13 @@ class Visualisation:
         self.__signal = signal
 
     def plot_signal(self, **kwargs):
-        self.__signal.data.plot(**kwargs)
+        fig, ax = plt.subplots()
+        if type(self.__signal).__name__ == 'DecomposedSignal':
+            if self.__signal.data_raw.sum().sum() == 0:
+                raise Exception('No modification was made on the data.')
+            self.__signal.data_raw.plot(ax=ax, **kwargs)
+        self.__signal.data.plot(ax=ax, **kwargs)
+        plt.show()
 
     def plot_smoothing(self, resample_size: str = 'A', window_size: int = 12):
         """
@@ -39,7 +45,7 @@ class Visualisation:
 
         labels = ['Actuals_s' + str(i) for i in range(1, n_signals + 1)]
         if type(self.__signal).__name__ == "DecomposedSignal":
-            if self.__signal.got_trend == 1:
+            if 'trend' in self.__signal.operations:
                 ax.plot(self.__signal.data_raw, c='gray')
             else:
                 ax.plot(self.__signal.data, c='gray')
@@ -62,7 +68,16 @@ class Visualisation:
         n_signals = self.__signal.test_data.shape[1]
 
         labels = ['Actuals_s' + str(i) for i in range(1, n_signals + 1)]
-        ax.plot(self.__signal.data, c='gray')
+        if type(self.__signal).__name__ == "DecomposedSignal":
+            if 'trend' in self.__signal.operations:
+                ax.plot(self.__signal.data_raw, c='gray')
+                last_obs = self.__signal.data_raw.iloc[-1:]
+            else:
+                ax.plot(self.__signal.data, c='gray')
+                last_obs = self.__signal.data.iloc[-1:]
+        else:
+            ax.plot(self.__signal.data, c='gray')
+            last_obs = self.__signal.data.iloc[-1:]
         for model in self.__signal.models.keys():
             if 'forecast' not in self.__signal.models[model]:
                 warnings.warn(f'No forecasts have been computed with {model}')
@@ -70,7 +85,7 @@ class Visualisation:
             pred = pd.DataFrame(self.__signal.models[model]['forecast'].values())
             pred.columns = self.__signal.models[model]['forecast'].columns
             pred.index = self.__signal.models[model]['forecast'].time_index
-            pred = pd.concat([self.__signal.data.iloc[-1:], pred])
+            pred = pd.concat([last_obs, pred])
             ax.plot(pred)
             list_model_label = [model + '_s' + str(i) for i in range(1, n_signals + 1)]
             labels += list_model_label

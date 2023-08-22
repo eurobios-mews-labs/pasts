@@ -85,7 +85,7 @@ if __name__ == '__main__':
 
     # --- Aggregated Model ---
     signal_m.apply_aggregated_model([XGBModel(lags=[-1, -2, -3]), VARIMA()])
-    signal_m.compute_scores(axis=0)
+    signal_m.compute_scores()
 
     # ---  Visualize the predictions ---
     Visualisation(signal_m).show_predictions()
