@@ -78,6 +78,8 @@ if __name__ == '__main__':
     matplotlib.use("qt5agg")
     series = AirPassengersDataset().load()
     dataframe = series.pd_dataframe()
+    dataframe["#Passengers2"] = dataframe["#Passengers"]
+    dataframe["#Passengers2"] *= 1.5
     trend = Trend()
     trend.fit(X=dataframe)
     ret = trend.transform(10)
