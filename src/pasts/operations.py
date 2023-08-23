@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from darts import TimeSeries
 from darts.utils.historical_forecasts.utils import TimeIndex
 from sklearn.linear_model import LinearRegression
 
@@ -69,13 +70,17 @@ class Operation:
         self.list = [(Identity().transform(signal.data.index),
                       Identity().back_transform(signal.data.index))]
 
+    def trend(self, data):
+        cls = Trend()
+        cls.fit(data)
+        self.list.append((cls.transform, cls.reverse_transform))
 
 if __name__ == '__main__':
     # TODO to del
-    from darts.datasets import AirPassengersDataset
+    from darts.datasets import AirPassengersDataset, AustralianTourismDataset
     import matplotlib.pyplot as plt
     import matplotlib
-    matplotlib.use("qt5agg")
+    # matplotlib.use("qt5agg")
     series = AirPassengersDataset().load()
     dataframe = series.pd_dataframe()
     dataframe["#Passengers2"] = dataframe["#Passengers"]
@@ -90,10 +95,35 @@ if __name__ == '__main__':
     series.plot(ax=ax)
     ret.plot(ax=ax)
     ret2.plot(ax=ax)
-    plt.show()
 
     ret_past = trend.reverse_transform(-100)
     ret_past.plot(ax=ax)
     ret_past.index = ret_past.index.to_series().dt.ceil("ms")
     (ret_past + dataframe).plot(label="detrend", ax=ax)
     plt.legend()
+    plt.show()
+
+    # Multivariate
+    series_m = AustralianTourismDataset().load()[['Hol', 'VFR', 'Oth']]
+    df_m = pd.DataFrame(series_m.values())
+    df_m.rename(columns={0: 'Hol', 1: 'VFR', 2: 'Oth'}, inplace=True)
+    df_m.index = pd.date_range(start='2020-01-01', periods=len(df_m), freq='MS')
+    trend = Trend()
+    trend.fit(X=df_m)
+    ret = trend.transform(10)
+    ret2 = trend.transform(-20)
+
+    plt.figure()
+    ax = plt.gca()
+    TimeSeries.from_dataframe(df_m).plot(ax=ax)
+    ret.plot(ax=ax)
+    ret2.plot(ax=ax)
+
+    ret_past = trend.reverse_transform(-20)
+    ret_past.plot(ax=ax)
+    ret_past.index = ret_past.index.to_series().dt.ceil("ms")
+    (ret_past + df_m).plot(label="detrend", ax=ax)
+    plt.legend()
+    plt.show()
+
+
