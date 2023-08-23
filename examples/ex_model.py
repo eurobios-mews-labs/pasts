@@ -27,8 +27,10 @@ if __name__ == '__main__':
     signal.apply_stat_test('seasonality')
 
     # ---- Machine Learning ---
-    timestamp = '1959-01-01'
+    timestamp = '1958-12-01'
     signal.validation_split(timestamp=timestamp)
+    signal.apply_operation('trend')
+    Visualisation(signal).plot_signal()
 
     signal.apply_model(ExponentialSmoothing())
 

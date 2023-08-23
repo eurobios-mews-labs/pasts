@@ -8,16 +8,21 @@ from pandas.plotting import autocorrelation_plot
 
 class Visualisation:
 
-    def __init__(self, signal: Union["Signal", "DecomposedSignal"]):
+    def __init__(self, signal: "Signal"):
         self.__signal = signal
 
     def plot_signal(self, **kwargs):
         fig, ax = plt.subplots()
-        if type(self.__signal).__name__ == 'DecomposedSignal':
-            if self.__signal.data_raw.sum().sum() == 0:
-                raise Exception('No modification was made on the data.')
-            self.__signal.data_raw.plot(ax=ax, **kwargs)
+        i = 0
         self.__signal.data.plot(ax=ax, **kwargs)
+        for col in self.__signal.data.columns:
+            ax.lines[i].set_label(f'actual series {col}')
+            i += 1
+        if (self.__signal.data - self.__signal.rest_data).sum().sum() != 0:
+            self.__signal.rest_data.plot(ax=ax, **kwargs)
+            for col in self.__signal.rest_data.columns:
+                ax.lines[i].set_label(f'transformed series {col}')
+                i += 1
         plt.show()
 
     def plot_smoothing(self, resample_size: str = 'A', window_size: int = 12):
@@ -44,13 +49,7 @@ class Visualisation:
         n_signals = self.__signal.test_data.shape[1]
 
         labels = ['Actuals_s' + str(i) for i in range(1, n_signals + 1)]
-        if type(self.__signal).__name__ == "DecomposedSignal":
-            if 'trend' in self.__signal.operations:
-                ax.plot(self.__signal.data_raw, c='gray')
-            else:
-                ax.plot(self.__signal.data, c='gray')
-        else:
-            ax.plot(self.__signal.data, c='gray')
+        ax.plot(self.__signal.data, c='gray')
         for model in self.__signal.models.keys():
             pred = pd.DataFrame(self.__signal.models[model]['predictions'].values())
             pred.columns = self.__signal.models[model]['predictions'].columns
@@ -68,16 +67,8 @@ class Visualisation:
         n_signals = self.__signal.test_data.shape[1]
 
         labels = ['Actuals_s' + str(i) for i in range(1, n_signals + 1)]
-        if type(self.__signal).__name__ == "DecomposedSignal":
-            if 'trend' in self.__signal.operations:
-                ax.plot(self.__signal.data_raw, c='gray')
-                last_obs = self.__signal.data_raw.iloc[-1:]
-            else:
-                ax.plot(self.__signal.data, c='gray')
-                last_obs = self.__signal.data.iloc[-1:]
-        else:
-            ax.plot(self.__signal.data, c='gray')
-            last_obs = self.__signal.data.iloc[-1:]
+        ax.plot(self.__signal.data, c='gray')
+        last_obs = self.__signal.data.iloc[-1:]
         for model in self.__signal.models.keys():
             if 'forecast' not in self.__signal.models[model]:
                 warnings.warn(f'No forecasts have been computed with {model}')

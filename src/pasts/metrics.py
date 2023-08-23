@@ -24,7 +24,7 @@ dict_metrics_darts = {'mape': mape,
 
 class Metrics:
 
-    def __init__(self, signal: Union["Signal", "DecomposedSignal"], list_metrics: list[str]):
+    def __init__(self, signal: "Signal", list_metrics: list[str]):
         self.signal = signal
         self.dict_metrics_sklearn = {key: dict_metrics_sklearn[key] for key in list_metrics
                                      if key in dict_metrics_sklearn.keys()}
@@ -32,13 +32,7 @@ class Metrics:
                                    if key in dict_metrics_darts.keys()}
 
     def scores_sklearn(self, model, axis):
-        if type(self.signal).__name__ == "DecomposedSignal":
-            if 'trend' in self.signal.operations:
-                df_test = self.signal.retrend_uni(self.signal.test_data)
-            else:
-                df_test = self.signal.test_data.copy()
-        else:
-            df_test = self.signal.test_data.copy()
+        df_test = self.signal.test_data.copy()
         df_pred = self.signal.models[model]['predictions'].pd_dataframe()
 
         if axis == 0:
@@ -61,13 +55,7 @@ class Metrics:
         return results
 
     def scores_darts(self, model):
-        if type(self.signal).__name__ == "DecomposedSignal":
-            if 'trend' in self.signal.operations:
-                ts_test = TimeSeries.from_dataframe(self.signal.retrend_uni(self.signal.test_data))
-            else:
-                ts_test = self.signal.test_data.copy()
-        else:
-            ts_test = TimeSeries.from_dataframe(self.signal.test_data)
+        ts_test = TimeSeries.from_dataframe(self.signal.test_data)
         ts_pred = self.signal.models[model]['predictions']
         results = pd.DataFrame(index=ts_pred.columns, columns=list(self.dict_metrics_darts.keys()))
         for col in ts_pred.columns:

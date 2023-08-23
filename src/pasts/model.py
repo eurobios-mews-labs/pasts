@@ -1,6 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Union
-
 from pandas import MultiIndex
 
 from pasts.metrics import root_mean_squared_error
@@ -10,17 +8,8 @@ from darts import TimeSeries
 
 
 class ModelAbstract(ABC):
-    def __init__(self, signal: Union["Signal", "DecomposedSignal"]):
-        self.__train_tseries = TimeSeries.from_dataframe(signal.train_data)
-        self.__signal = signal
-
-    @property
-    def signal(self):
-        return self.__signal
-
-    @property
-    def train_tseries(self):
-        return self.__train_tseries
+    def __init__(self, signal: "Signal"):
+        self.signal = signal
 
     @abstractmethod
     def apply(self):
@@ -33,24 +22,29 @@ class ModelAbstract(ABC):
 
 class Model(ModelAbstract):
 
-    def __init__(self, signal: Union["Signal", "DecomposedSignal"]):
+    def __init__(self, signal: "Signal"):
         super().__init__(signal)
 
     def apply(self, model, gridsearch=False, parameters=None):
+        train_tseries = TimeSeries.from_dataframe(self.signal.rest_train_data)
         if gridsearch:
             if parameters is None:
                 raise Exception("Please enter the parameters")
             print('Performing the gridsearch for', model.__class__.__name__, '...')
             best_model, best_parameters, _ = model.gridsearch(parameters=parameters,
-                                                              series=self.train_tseries,
+                                                              series=train_tseries,
                                                               start=0.5,
                                                               forecast_horizon=5)
             model = best_model
         else:
             best_parameters = "default"
 
-        model.fit(self.train_tseries)
+        model.fit(train_tseries)
         forecast = model.predict(len(self.signal.test_data))
+
+        if self.signal.operation_train.list:
+            operator = self.signal.operation_train.unapply(len(self.signal.test_data))
+            forecast += TimeSeries.from_dataframe(operator)
 
         return {'predictions': forecast, 'best_parameters': best_parameters, 'scores': {'unit_wise': {},
                                                                                         'time_wise': {}},
@@ -60,20 +54,14 @@ class Model(ModelAbstract):
         if model_name not in self.signal.models.keys():
             raise AttributeError(f'{model_name} has not been fitted.')
         model = self.signal.models[model_name]['estimator']
-
-        # if self.signal.properties['is_univariate']:
-        train_temp = TimeSeries.from_dataframe(self.signal.data)
-        # else:
-        #    train_temp = TimeSeries.from_dataframe(self.signal.data.reset_index(),
-        #                                           time_col=self.signal.data.index.name,
-        #                                           value_cols=self.signal.data.columns.to_list())
+        train_temp = TimeSeries.from_dataframe(self.signal.rest_data)
         model.fit(train_temp)
         return model
 
 
 class AggregatedModel(ModelAbstract):
 
-    def __init__(self, signal: Union["Signal", "DecomposedSignal"]):
+    def __init__(self, signal: "Signal"):
         super().__init__(signal)
 
     def apply(self, dict_models):
