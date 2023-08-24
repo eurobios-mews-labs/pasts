@@ -23,8 +23,45 @@ dict_metrics_darts = {'mape': mape,
 
 
 class Metrics:
+    """
+    A class to compute scores for time series predictions.
+
+    Attributes
+    ----------
+    signal : Signal
+        The signal on which predictions have been computed.
+    dict_metrics_sklearn: dict
+        Metrics from sklearn requested in class instantiation.
+        keys: names in ['r2', 'mse', 'rmse']
+        values: functions
+    dict_metrics_darts: dict
+        Metrics from darts requested in class instantiation.
+        keys: names in ['mape', 'smape', 'mae']
+        values: functions
+
+    Methods
+    -------
+    scores_sklearn(model, axis):
+        Computes sklearn scores given by dict_metrics_sklearn.
+    scores_darts(model):
+        Computes darts scores given by dict_metrics_sklearn.
+    compute_scores(model, axis):
+        Computes all requested scores.
+    scores_comparison(axis):
+        Creates a dataframe for each scorer with the performance of all models.
+        """
 
     def __init__(self, signal: "Signal", list_metrics: list[str]):
+        """
+        Constructs all the necessary attributes for the metrics object.
+
+        Parameters
+        ----------
+        signal : Signal
+            Used for predictions.
+        list_metrics: list[str]
+            List of names of metrics to be computed.
+        """
         self.signal = signal
         self.dict_metrics_sklearn = {key: dict_metrics_sklearn[key] for key in list_metrics
                                      if key in dict_metrics_sklearn.keys()}
@@ -32,6 +69,20 @@ class Metrics:
                                    if key in dict_metrics_darts.keys()}
 
     def scores_sklearn(self, model, axis):
+        """
+        Computes sklearn scores given by dict_metrics_sklearn.
+
+        Parameters
+        ----------
+        model : str
+                Model for which to compute the score.
+        axis : int = 0 or 1 (default 1)
+                Whether to compute scores time-wise (0) or unit-wise (1)
+
+        Returns
+        -------
+        Dataframe of scores with unit or time as index and metrics as columns
+        """
         df_test = self.signal.test_data.copy()
         df_pred = self.signal.models[model]['predictions'].pd_dataframe()
 
@@ -55,6 +106,20 @@ class Metrics:
         return results
 
     def scores_darts(self, model):
+        """
+        Computes sklearn scores given by dict_metrics_sklearn.
+
+        Parameters
+        ----------
+        model : str
+                Model for which to compute the score.
+        axis : int = 0 or 1 (default 1)
+                Whether to compute scores time-wise (0) or unit-wise (1)
+
+        Returns
+        -------
+        Dataframe of scores with unit or time as index and metrics as columns
+        """
         ts_test = TimeSeries.from_dataframe(self.signal.test_data)
         ts_pred = self.signal.models[model]['predictions']
         results = pd.DataFrame(index=ts_pred.columns, columns=list(self.dict_metrics_darts.keys()))
@@ -73,6 +138,20 @@ class Metrics:
         return results
 
     def compute_scores(self, model: str, axis):
+        """
+        Computes all scores given in class instantiation.
+
+        Parameters
+        ----------
+        model : str
+                Model for which to compute the score.
+        axis : int = 0 or 1 (default 1)
+                Whether to compute scores time-wise (0) or unit-wise (1)
+
+        Returns
+        -------
+        Dataframe of scores with unit or time as index and metrics as columns
+        """
         check_arguments(
             not self.signal.models,
             "Apply at least one model before computing scores.",
@@ -99,6 +178,19 @@ class Metrics:
         return result
 
     def scores_comparison(self, axis):
+        """
+        Creates a dataframe for each scorer with the performance of all models.
+        Makes model comparison easier.
+
+        Parameters
+        ----------
+        axis : int = 0 or 1 (default 1)
+                Whether to compute scores time-wise (0) or unit-wise (1)
+
+        Returns
+        -------
+        Dataframe of scores with unit or time as index and metrics as columns
+        """
         if axis == 1:
             score_type = 'unit_wise'
         elif axis == 0:

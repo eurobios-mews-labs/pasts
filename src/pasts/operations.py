@@ -67,8 +67,8 @@ class Trend:
 
 
 class Seasonality:
-    def __init__(self, seasonality: int):
-        self.seasonality = seasonality
+    def __init__(self, seasonality):
+        self.seasonality = int(seasonality)
 
     def fit(self, X):
         self.time_index = X.index
@@ -77,7 +77,7 @@ class Seasonality:
             values = X[col].values
             diff = [0 for _ in range(self.seasonality)]
             for i in range(self.seasonality, len(values)):
-                res = values[i] - values[i - self.seasonality]
+                res = values[i - self.seasonality]
                 diff.append(res)
             df_diff[col] = diff
         self.seasonal_component = df_diff
@@ -86,31 +86,32 @@ class Seasonality:
 
     def transform(self, i):
         if i > 0:
-            output = pd.DataFrame(self.estimator_future_season.predict(i))
+            output = self.estimator_future_season.predict(i).pd_dataframe()
         else:
             output = self.seasonal_component.iloc[i:]
         return - output
 
     def reverse_transform(self, i):
         if i > 0:
-            output = pd.DataFrame(self.estimator_future_season.predict(i))
+            output = self.estimator_future_season.predict(i).pd_dataframe()
         else:
             output = self.seasonal_component.iloc[i:]
         return output
 
 
 class Operation:
-    def __init__(self):
+    def __init__(self, signal: "Signal"):
+        self.signal = signal
         self.list = []
 
-    def trend(self, data):
+    def trend(self):
         cls = Trend()
-        cls.fit(data)
+        cls.fit(self.signal.rest_data)
         self.list.append((cls.transform, cls.reverse_transform))
 
-    def season(self, data, seasonality):
-        cls = Seasonality(seasonality)
-        cls.fit(data)
+    def season(self):
+        cls = Seasonality(self.signal.tests_stat['seasonality: check_seasonality'][1][1])
+        cls.fit(self.signal.rest_data)
         self.list.append((cls.transform, cls.reverse_transform))
 
     def apply(self, i):

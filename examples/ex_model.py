@@ -29,8 +29,7 @@ if __name__ == '__main__':
     # ---- Machine Learning ---
     timestamp = '1958-12-01'
     signal.validation_split(timestamp=timestamp)
-    signal.apply_operation('trend')
-    signal.filter_outliers()
+    signal.apply_operation('seasonality')
     Visualisation(signal).plot_signal()
 
     signal.apply_model(ExponentialSmoothing())
@@ -76,7 +75,8 @@ if __name__ == '__main__':
     # ---- Machine Learning ---
     timestamp = 30
     signal_m.validation_split(timestamp=timestamp)
-
+    signal_m.apply_operation('seasonality')
+    Visualisation(signal_m).plot_signal()
     signal_m.apply_model(XGBModel(lags=[-1, -2, -3]))
 
     param_grid = {'trend': [None, 'c'],

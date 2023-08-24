@@ -40,17 +40,9 @@ class Signal(ABC):
 
     Attributes
     ----------
-    properties : dict
-        Info about the series (shape, types, univariate or multivariate, number of missing values, quantiles)
-    tests_stat : dict
-        keys: names of statistical tests applied on the series
-        values: Whether the null hypothesis is rejected, p-value
     models : dict
         keys: models applied on the series
         values: dictionary of predictions and best parameters
-    performance_models: dict
-        keys: names of metrics
-        values: dataframe of metrics computed for each model
 
     Methods
     -------
@@ -79,8 +71,8 @@ class Signal(ABC):
         """
         self.__data = data
         self.__rest_data = data.copy()
-        self.operation_train = Operation()
-        self.operation_data = Operation()
+        self.__operation_train = Operation(self)
+        self.__operation_data = Operation(self)
         self.__properties = profiling(data)
         self.__tests_stat = {}
         self.__train_data = None
@@ -92,34 +84,43 @@ class Signal(ABC):
 
     @property
     def data(self):
+        """Input time series as a pandas dataframe"""
         return self.__data
 
     @property
     def rest_data(self):
+        """Residual after applying operations to the data"""
         return self.__rest_data
 
     @property
     def train_data(self):
+        """Train set as a pandas dataframe"""
         return self.__train_data
 
     @property
     def test_data(self):
+        """Test set as a pandas dataframe"""
         return self.__test_data
 
     @property
     def rest_train_data(self):
+        """Residual after applying operations to train set"""
         return self.__rest_train_data
 
     @property
     def properties(self):
+        """Dictionary of properties of the signal"""
         return self.__properties
 
     @property
     def tests_stat(self):
+        """Dictionary of statistical tests applied on data"""
         return self.__tests_stat
 
     @property
     def performance_models(self):
+        """Dictionary containing a maximum of 2 other dictionaries for unit-wise or time-wise scores. Dictionaries
+        contain a dataframe for each scorer, with scores computed for all models."""
         return self.__performance_models
 
     def apply_stat_test(self, type_test: str, test_stat_name: str = None, *args, **kwargs):
@@ -159,7 +160,7 @@ class Signal(ABC):
 
         If n_splits_cv is filled, yields train and test indices for cross-validation.
 
-        Fills the attributes train_data and test_data.
+        Fills the attributes train_data, test_data and rest_train_data (with train_data per default)
 
         Parameters
         ----------
@@ -180,6 +181,18 @@ class Signal(ABC):
         self.__rest_train_data = self.train_data.copy()
 
     def filter_outliers(self, threshold=5):
+        """
+        Deletes outliers in transformed data and train data.
+
+        Parameters
+        ----------
+        threshold: int
+            z-score above which values are deleted.
+
+        Returns
+        -------
+        None
+        """
         z_scores = stats.zscore(self.rest_data)
         outliers_mask = (z_scores > threshold) | (z_scores < -threshold)
         self.__rest_data = self.rest_data.where(~outliers_mask, other=pd.NA)
@@ -188,22 +201,28 @@ class Signal(ABC):
         outliers_mask = (z_scores > threshold) | (z_scores < -threshold)
         self.__rest_train_data = self.rest_train_data.where(~outliers_mask, other=pd.NA)
 
-    def apply_operation(self, op: Union[str, list[str]]):
-        if isinstance(op, str):
-            op = [op]
-        for instance in op:
-            if instance not in ['trend', 'seasonality']:
-                warnings.warn(f"{instance} operation is not implemented. Enter operations in ['trend', 'seasonality'].")
-        if 'trend' in op:
-            self.operation_train.trend(self.train_data)
-            self.operation_data.trend(self.data)
-        if 'seasonality' in op:
-            if 'seasonality' not in self.tests_stat:
+    def apply_operation(self, op: str):
+        if op not in ['trend', 'seasonality']:
+            warnings.warn(f"{op} operation is not implemented. Enter operations in ['trend', 'seasonality'].")
+
+        if op == 'trend':
+            self.__operation_train.trend()
+            self.__operation_data.trend()
+            self.__rest_train_data += self.__operation_train.apply(-len(self.train_data))
+            self.__rest_data += self.__operation_data.apply(-len(self.data))
+        if op == 'seasonality':
+            if not self.properties['is_univariate']:
+                raise Exception('Deseason is not implemented for multivariate series.')
+            if 'seasonality: check_seasonality' not in self.tests_stat:
                 self.apply_stat_test('seasonality')
-            self.operation_train.season(self.train_data, self.tests_stat['seasonality'][1])
-            self.operation_data.season(self.data, self.tests_stat['seasonality'][1])
-        self.__rest_train_data += self.operation_train.apply(-len(self.train_data))
-        self.__rest_data += self.operation_data.apply(-len(self.data))
+            self.__operation_train.season(self.train_data, self.tests_stat['seasonality: check_seasonality'][1][1])
+            self.__operation_data.season(self.data, self.tests_stat['seasonality: check_seasonality'][1][1])
+            self.__rest_train_data += self.__operation_train.apply(-len(self.train_data))
+            self.__rest_train_data = self.__rest_train_data.iloc[
+                                     self.tests_stat['seasonality: check_seasonality'][1][1]:]
+            self.__rest_data += self.__operation_data.apply(-len(self.data))
+            self.__rest_data = self.__rest_data.iloc[
+                                     self.tests_stat['seasonality: check_seasonality'][1][1]:]
 
     def apply_model(self, model, gridsearch=False, parameters=None):
         """
@@ -214,7 +233,7 @@ class Signal(ABC):
         Parameters
         ----------
         model
-                Instance of a model. Will be refitted even if is has already been.
+                Instance of a model. Will be refitted even if it has already been.
         gridsearch : bool, optional
                 Whether to perform a gridsearch (default is False)
         parameters : pd.Dataframe, optional
@@ -302,15 +321,15 @@ class Signal(ABC):
         -------
         None
         """
-        if self.operation_data.list:
-            inverse_operations = self.operation_data.unapply(horizon)
+        if self.__operation_data.list:
+            inverse_operations = self.__operation_data.unapply(horizon)
         if model_name == 'AggregatedModel':
             if 'AggregatedModel' not in self.models.keys():
                 raise Exception('Aggregated Model has not been trained. Use method apply_aggregated_model first.')
             for model in self.models['AggregatedModel']['models'].keys():
                 self.models[model]['final_estimator'] = Model(self).compute_final_estimator(model)
                 self.models[model]['forecast'] = self.models[model]['final_estimator'].predict(horizon)
-                if self.operation_data.list:
+                if self.__operation_data.list:
                     self.models[model]['forecast'] += TimeSeries.from_dataframe(inverse_operations)
 
             self.models['AggregatedModel']['forecast'] = AggregatedModel(self).compute_final_estimator()
