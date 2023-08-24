@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from darts import TimeSeries
+from darts.models import XGBModel
 from darts.utils.historical_forecasts.utils import TimeIndex
 from sklearn.linear_model import LinearRegression
 
@@ -12,7 +13,7 @@ class Trend:
     def fit(self, X, y=None):
         self.origin_index = X.index
         self.time_index = X.index.to_numpy(dtype="float64")
-        self.time_index = self.time_index.astype(float)#*1e-17
+        self.time_index = self.time_index.astype(float)*1e-17
         self.features_ = X.columns
         frame = self.time_index.reshape(-1, 1)
         estimator = LinearRegression()
@@ -65,22 +66,50 @@ class Trend:
                             index=self.features_.to_list()).T
 
 
-class Identity:
-    def transform(self, t: TimeIndex):
-        return t
+class Seasonality:
+    def __init__(self, seasonality: int):
+        self.seasonality = seasonality
 
-    def back_transform(self, t: TimeIndex):
-        return t
+    def fit(self, X):
+        self.time_index = X.index
+        df_diff = pd.DataFrame(index=self.time_index, columns=X.columns)
+        for col in X.columns:
+            values = X[col].values
+            diff = [0 for _ in range(self.seasonality)]
+            for i in range(self.seasonality, len(values)):
+                res = values[i] - values[i - self.seasonality]
+                diff.append(res)
+            df_diff[col] = diff
+        self.seasonal_component = df_diff
+        self.estimator_future_season = XGBModel(lags=self.seasonality)
+        self.estimator_future_season.fit(TimeSeries.from_dataframe(self.seasonal_component))
+
+    def transform(self, i):
+        if i > 0:
+            output = pd.DataFrame(self.estimator_future_season.predict(i))
+        else:
+            output = self.seasonal_component.iloc[i:]
+        return - output
+
+    def reverse_transform(self, i):
+        if i > 0:
+            output = pd.DataFrame(self.estimator_future_season.predict(i))
+        else:
+            output = self.seasonal_component.iloc[i:]
+        return output
 
 
 class Operation:
     def __init__(self):
-        # self.list = [(Identity().transform(signal.data.index),
-        #              Identity().back_transform(signal.data.index))]
         self.list = []
 
     def trend(self, data):
         cls = Trend()
+        cls.fit(data)
+        self.list.append((cls.transform, cls.reverse_transform))
+
+    def season(self, data, seasonality):
+        cls = Seasonality(seasonality)
         cls.fit(data)
         self.list.append((cls.transform, cls.reverse_transform))
 
@@ -112,6 +141,11 @@ if __name__ == '__main__':
     dataframe = series.pd_dataframe()
     dataframe["#Passengers2"] = dataframe["#Passengers"]
     dataframe["#Passengers2"] *= 1.5
+    season = Seasonality()
+    season.fit(X=dataframe)
+    season.transform(20)
+    season.seasonal_component.plot()
+
     trend = Trend()
     trend.fit(X=dataframe)
     ret = trend.transform(20)
@@ -174,6 +208,7 @@ if __name__ == '__main__':
     dataframe = series.pd_dataframe()
     op = Operation()
     op.trend(dataframe)
+    op.season(dataframe, 12)
     ret = op.unapply(50)
     ret2 = op.unapply(-100)
 

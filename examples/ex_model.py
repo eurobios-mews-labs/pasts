@@ -30,6 +30,7 @@ if __name__ == '__main__':
     timestamp = '1958-12-01'
     signal.validation_split(timestamp=timestamp)
     signal.apply_operation('trend')
+    signal.filter_outliers()
     Visualisation(signal).plot_signal()
 
     signal.apply_model(ExponentialSmoothing())

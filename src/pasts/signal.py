@@ -1,8 +1,11 @@
 import copy
 import warnings
 from abc import ABC
+from typing import Union
+
 import pandas as pd
 from darts import TimeSeries
+from scipy import stats
 
 from pasts.model import Model, AggregatedModel
 from pasts.operations import Operation
@@ -176,10 +179,29 @@ class Signal(ABC):
         self.__cv_tseries = call_validation.cv_tseries
         self.__rest_train_data = self.train_data.copy()
 
-    def apply_operation(self, op: str):
-        if op == 'trend':
+    def filter_outliers(self, threshold=5):
+        z_scores = stats.zscore(self.rest_data)
+        outliers_mask = (z_scores > threshold) | (z_scores < -threshold)
+        self.__rest_data = self.rest_data.where(~outliers_mask, other=pd.NA)
+
+        z_scores = stats.zscore(self.rest_train_data)
+        outliers_mask = (z_scores > threshold) | (z_scores < -threshold)
+        self.__rest_train_data = self.rest_train_data.where(~outliers_mask, other=pd.NA)
+
+    def apply_operation(self, op: Union[str, list[str]]):
+        if isinstance(op, str):
+            op = [op]
+        for instance in op:
+            if instance not in ['trend', 'seasonality']:
+                warnings.warn(f"{instance} operation is not implemented. Enter operations in ['trend', 'seasonality'].")
+        if 'trend' in op:
             self.operation_train.trend(self.train_data)
             self.operation_data.trend(self.data)
+        if 'seasonality' in op:
+            if 'seasonality' not in self.tests_stat:
+                self.apply_stat_test('seasonality')
+            self.operation_train.season(self.train_data, self.tests_stat['seasonality'][1])
+            self.operation_data.season(self.data, self.tests_stat['seasonality'][1])
         self.__rest_train_data += self.operation_train.apply(-len(self.train_data))
         self.__rest_data += self.operation_data.apply(-len(self.data))
 
