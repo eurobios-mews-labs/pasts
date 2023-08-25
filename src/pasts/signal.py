@@ -70,8 +70,8 @@ class Signal(ABC):
         """
         self.__data = data
         self.__rest_data = data.copy()
-        self.__operation_train = Operation(self.train_data)
-        self.__operation_data = Operation(self.data)
+        self.__operation_train = None
+        self.__operation_data = None
         self.__properties = profiling(data)
         self.__tests_stat = {}
         self.__train_data = None
@@ -209,8 +209,10 @@ class Signal(ABC):
         self.__rest_train_data = self.rest_train_data.where(~outliers_mask, other=pd.NA)
 
     def apply_operations(self, list_op: list[str]):
+        self.__operation_data = Operation(self.data)
         self.__rest_data = self.operation_data.fit_transform(list_op)
         if self.train_data is not None:
+            self.__operation_train = Operation(self.train_data)
             self.__rest_train_data = self.operation_train.fit_transform(list_op)
 
     def apply_model(self, model, gridsearch=False, parameters=None):

@@ -29,7 +29,7 @@ if __name__ == '__main__':
     # ---- Machine Learning ---
     timestamp = '1958-12-01'
     signal.validation_split(timestamp=timestamp)
-    signal.apply_operation('seasonality')
+    signal.apply_operations(['trend', 'seasonality'])
     Visualisation(signal).plot_signal()
 
     signal.apply_model(ExponentialSmoothing())
@@ -55,10 +55,10 @@ if __name__ == '__main__':
     Visualisation(signal).show_predictions()
 
     # --- Forecast ---
-    signal.forecast("Prophet", 6)
-    signal.forecast("AggregatedModel", 6)
-    signal.forecast("AutoARIMA", 6)
-    signal.forecast("ExponentialSmoothing", 6)
+    signal.forecast("Prophet", 100)
+    signal.forecast("AggregatedModel", 100)
+    signal.forecast("AutoARIMA", 100)
+    signal.forecast("ExponentialSmoothing", 100)
     Visualisation(signal).show_forecast()
 
     # Multivariate
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     # ---- Machine Learning ---
     timestamp = 30
     signal_m.validation_split(timestamp=timestamp)
-    signal_m.apply_operation('seasonality')
+    signal_m.apply_operations(['trend'])
     Visualisation(signal_m).plot_signal()
     signal_m.apply_model(XGBModel(lags=[-1, -2, -3]))
 
