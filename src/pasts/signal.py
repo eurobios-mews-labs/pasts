@@ -1,7 +1,6 @@
 import copy
 import warnings
 from abc import ABC
-from typing import Union
 
 import pandas as pd
 from darts import TimeSeries
@@ -71,8 +70,8 @@ class Signal(ABC):
         """
         self.__data = data
         self.__rest_data = data.copy()
-        self.__operation_train = Operation(self)
-        self.__operation_data = Operation(self)
+        self.__operation_train = Operation(self.train_data)
+        self.__operation_data = Operation(self.data)
         self.__properties = profiling(data)
         self.__tests_stat = {}
         self.__train_data = None
@@ -91,6 +90,14 @@ class Signal(ABC):
     def rest_data(self):
         """Residual after applying operations to the data"""
         return self.__rest_data
+
+    @property
+    def operation_data(self):
+        return self.__operation_data
+
+    @property
+    def operation_train(self):
+        return self.__operation_train
 
     @property
     def train_data(self):
@@ -201,28 +208,10 @@ class Signal(ABC):
         outliers_mask = (z_scores > threshold) | (z_scores < -threshold)
         self.__rest_train_data = self.rest_train_data.where(~outliers_mask, other=pd.NA)
 
-    def apply_operation(self, op: str):
-        if op not in ['trend', 'seasonality']:
-            warnings.warn(f"{op} operation is not implemented. Enter operations in ['trend', 'seasonality'].")
-
-        if op == 'trend':
-            self.__operation_train.trend()
-            self.__operation_data.trend()
-            self.__rest_train_data += self.__operation_train.apply(-len(self.train_data))
-            self.__rest_data += self.__operation_data.apply(-len(self.data))
-        if op == 'seasonality':
-            if not self.properties['is_univariate']:
-                raise Exception('Deseason is not implemented for multivariate series.')
-            if 'seasonality: check_seasonality' not in self.tests_stat:
-                self.apply_stat_test('seasonality')
-            self.__operation_train.season(self.train_data, self.tests_stat['seasonality: check_seasonality'][1][1])
-            self.__operation_data.season(self.data, self.tests_stat['seasonality: check_seasonality'][1][1])
-            self.__rest_train_data += self.__operation_train.apply(-len(self.train_data))
-            self.__rest_train_data = self.__rest_train_data.iloc[
-                                     self.tests_stat['seasonality: check_seasonality'][1][1]:]
-            self.__rest_data += self.__operation_data.apply(-len(self.data))
-            self.__rest_data = self.__rest_data.iloc[
-                                     self.tests_stat['seasonality: check_seasonality'][1][1]:]
+    def apply_operations(self, list_op: list[str]):
+        self.__rest_data = self.operation_data.fit_transform(list_op)
+        if self.train_data is not None:
+            self.__rest_train_data = self.operation_train.fit_transform(list_op)
 
     def apply_model(self, model, gridsearch=False, parameters=None):
         """
@@ -313,7 +302,8 @@ class Signal(ABC):
         Parameters
         ----------
         model_name : str
-                Name of a model. If AggregatedModel, forecasts will be computed with the models included in the aggregation.
+                Name of a model. If AggregatedModel, forecasts will be computed with the models included in the
+                aggregation.
         horizon : int
                 Horizon of prediction.
 
@@ -321,16 +311,15 @@ class Signal(ABC):
         -------
         None
         """
-        if self.__operation_data.list:
-            inverse_operations = self.__operation_data.unapply(horizon)
         if model_name == 'AggregatedModel':
             if 'AggregatedModel' not in self.models.keys():
                 raise Exception('Aggregated Model has not been trained. Use method apply_aggregated_model first.')
             for model in self.models['AggregatedModel']['models'].keys():
                 self.models[model]['final_estimator'] = Model(self).compute_final_estimator(model)
                 self.models[model]['forecast'] = self.models[model]['final_estimator'].predict(horizon)
-                if self.__operation_data.list:
-                    self.models[model]['forecast'] += TimeSeries.from_dataframe(inverse_operations)
+                if self.operation_data.dict_op:
+                    self.models[model]['forecast'] = TimeSeries.from_dataframe(
+                        self.operation_data.transform(self.models[model]['forecast'].pd_dataframe()))
 
             self.models['AggregatedModel']['forecast'] = AggregatedModel(self).compute_final_estimator()
         else:
@@ -338,5 +327,6 @@ class Signal(ABC):
                 raise Exception(f'{model_name} has not been trained.')
             self.models[model_name]['final_estimator'] = Model(self).compute_final_estimator(model_name)
             self.models[model_name]['forecast'] = self.models[model_name]['final_estimator'].predict(horizon)
-            if self.operation_data.list:
-                self.models[model_name]['forecast'] += TimeSeries.from_dataframe(inverse_operations)
+            if self.operation_data.dict_op:
+                self.models[model_name]['forecast'] = TimeSeries.from_dataframe(
+                    self.operation_data.transform(self.models[model_name]['forecast'].pd_dataframe()))

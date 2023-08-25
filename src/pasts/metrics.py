@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 import pandas as pd
 from darts import TimeSeries
@@ -113,8 +111,6 @@ class Metrics:
         ----------
         model : str
                 Model for which to compute the score.
-        axis : int = 0 or 1 (default 1)
-                Whether to compute scores time-wise (0) or unit-wise (1)
 
         Returns
         -------
@@ -205,8 +201,3 @@ class Metrics:
                 df[model] = self.signal.models[model]['scores'][score_type][metric]
             dict_metrics_comp[metric] = df
         return dict_metrics_comp
-
-
-
-
-

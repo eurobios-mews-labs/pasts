@@ -1,8 +1,11 @@
+from typing import Union
+
 import numpy as np
 import pandas as pd
 from darts import TimeSeries
 from darts.models import XGBModel
 from darts.utils.historical_forecasts.utils import TimeIndex
+from darts.utils.statistics import check_seasonality
 from sklearn.linear_model import LinearRegression
 
 
@@ -100,37 +103,51 @@ class Seasonality:
 
 
 class Operation:
-    def __init__(self, signal: "Signal"):
-        self.signal = signal
-        self.list = []
+    def __init__(self, train_data: pd.DataFrame):
+        self.train_data = train_data
+        self.rest_data = train_data.copy()
+        self.dict_op = {}
+        self.implemented_operations = {'trend': self.trend, 'seasonality': self.season}
 
     def trend(self):
         cls = Trend()
-        cls.fit(self.signal.rest_data)
-        self.list.append((cls.transform, cls.reverse_transform))
+        cls.fit(self.rest_data)
+        self.dict_op['trend'] = (cls.transform, cls.reverse_transform)
 
     def season(self):
-        cls = Seasonality(self.signal.tests_stat['seasonality: check_seasonality'][1][1])
-        cls.fit(self.signal.rest_data)
-        self.list.append((cls.transform, cls.reverse_transform))
+        if self.rest_data.shape[1] > 1:
+            raise Exception("Removal of seasonal component is not implemented for multivariate TimeSeries.")
+        seasonality = check_seasonality(TimeSeries.from_dataframe(
+            self.rest_data))
+        if seasonality[0]:
+            cls = Seasonality(seasonality[1])
+            cls.fit(self.rest_data)
+            self.dict_op['seasonality'] = (cls.transform, cls.reverse_transform)
 
-    def apply(self, i):
-        dataframes = []
-        for op in self.list:
-            dataframes.append(op[0](i))
-        result = dataframes[0]
-        for i in range(1, len(dataframes)):
-            result += dataframes[i]
-        return result
+    def fit_transform(self, list_op: list[str]):
+        for op in list_op:
+            if op not in self.implemented_operations.keys():
+                raise Exception(f"Operation {op} is not implemented. "
+                                f"Choose operations in {self.implemented_operations.keys()}.")
+            self.implemented_operations[op]()
+            frame = self.dict_op[op][0](-len(self.rest_data))
+            self.rest_data += frame
+        return self.rest_data
 
-    def unapply(self, i):
-        dataframes = []
-        for op in self.list:
-            dataframes.append(op[1](i))
-        result = dataframes[0]
-        for i in range(1, len(dataframes)):
-            result += dataframes[i]
-        return result
+    def transform(self, data: pd.DataFrame, reverse=True):
+        intersection_length = len(self.rest_data.index.intersection(data.index))
+        if intersection_length > 0:
+            i = -intersection_length
+        else:
+            i = len(data)
+        a = 1
+        if not reverse:
+            a = 0
+        for op in reversed(self.dict_op.values()):
+            frame = op[a](i)
+            data += frame
+        return data
+
 
 if __name__ == '__main__':
     # TODO to del
@@ -207,11 +224,9 @@ if __name__ == '__main__':
     # Test Operation
     series = AirPassengersDataset().load()
     dataframe = series.pd_dataframe()
-    op = Operation()
-    op.trend(dataframe)
-    op.season(dataframe, 12)
-    ret = op.unapply(50)
-    ret2 = op.unapply(-100)
+    op = Operation(dataframe)
+    det = op.fit_transform(['trend', 'seasonality'])
+    ret = op.transform(det)
 
     i = 0
     plt.figure()

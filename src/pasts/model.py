@@ -42,9 +42,8 @@ class Model(ModelAbstract):
         model.fit(train_tseries)
         forecast = model.predict(len(self.signal.test_data))
 
-        if self.signal.operation_train.list:
-            operator = self.signal.operation_train.unapply(len(self.signal.test_data))
-            forecast += TimeSeries.from_dataframe(operator)
+        if self.signal.operation_train.dict:
+            forecast = TimeSeries.from_dataframe(self.signal.operation_train.tranform(forecast.pd_dataframe()))
 
         return {'predictions': forecast, 'best_parameters': best_parameters, 'scores': {'unit_wise': {},
                                                                                         'time_wise': {}},
