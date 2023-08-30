@@ -1,18 +1,18 @@
 # Toolbox for Time Series
 
-This packages aims to structure the way time series analysis and forecasting is done. 
+This package aims to structure the way time series analysis and forecasting is done. 
 
 #### Purpose of the Package 
 + The purpose of the package is to
-provide a collection of predicted models 
-and analysis methods for time series in one unified library
+provide a collection of forecasting models 
+and analysis methods for time series in one unified library.
 
 #### Features 
 + Collection of analysis methods:
   - Scipy and statsmodel for testing 
-  - times series processing
-  - statistical testing (stationarity, check seasonality, ...  )
-  - visualisation
+  - Time series processing
+  - Statistical testing (stationarity, check seasonality, ...  )
+  - Visualization
 + Collection of forecasting models using Darts, which is itself an aggregator of 
    - scikit-learn
    - tenserflow
@@ -37,7 +37,7 @@ from darts.models import AutoARIMA, Prophet, ExponentialSmoothing, XGBModel, VAR
 from darts.utils.utils import ModelMode, SeasonalityMode
 
 from pasts.signal import Signal
-from pasts.visualization import Visualisation
+from pasts.visualization import Visualization
 
 # ---- Load data ----
 series = AirPassengersDataset().load()
@@ -48,8 +48,8 @@ dt.index = series.time_index
 # --- Visualize data ---
 signal = Signal(dt)
 print(signal.properties)
-Visualisation(signal).plot_signal()
-Visualisation(signal).acf_plot()
+Visualization(signal).plot_signal()
+Visualization(signal).acf_plot()
 signal.apply_stat_test('stationary')
 signal.apply_stat_test('stationary', 'kpss')
 signal.apply_stat_test('seasonality')
@@ -58,7 +58,7 @@ signal.apply_stat_test('seasonality')
 timestamp = '1958-12-01'
 signal.validation_split(timestamp=timestamp)
 signal.apply_operations(['trend', 'seasonality'])
-Visualisation(signal).plot_signal()
+Visualization(signal).plot_signal()
 
 signal.apply_model(ExponentialSmoothing())
 
@@ -75,12 +75,12 @@ signal.compute_scores()
 signal.compute_scores(axis=0)
 
 # ---  Visualize predictions ---
-Visualisation(signal).show_predictions()
+Visualization(signal).show_predictions()
 
 # --- Aggregated Model ---
 signal.apply_aggregated_model([ExponentialSmoothing(), Prophet()])
 signal.compute_scores(axis=1)
-Visualisation(signal).show_predictions()
+Visualization(signal).show_predictions()
 
 # --- Forecast ---
 signal.forecast("Prophet", 100)
@@ -89,7 +89,7 @@ signal.forecast("AutoARIMA", 100)
 signal.forecast("ExponentialSmoothing", 100)
 
 # --- Visualize forecasts ---
-Visualisation(signal).show_forecast()
+Visualization(signal).show_forecast()
 ```
 
 ### Author
