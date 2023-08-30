@@ -1,8 +1,27 @@
+from typing import Union
+
 import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 
 
 class Validation:
+    """
+    A class to split data between train and test sets (possibly cross-validation).
+
+    Attributes
+    ----------
+    __data : pd.Dataframe
+        Dataset to split
+    train_data : pd.Dataframe (default None)
+        Train set as a dataframe
+    test_data : pd.Dataframe(default None)
+        Test set as dataframe
+
+    Methods
+    -------
+    split_cv(timestamp, n_splits_cv) :
+        Splits data between train set (<= timestamp) and test set (> timestamp).
+    """
 
     def __init__(self, data: pd.DataFrame):
         self.__cv_tseries = None
@@ -12,9 +31,22 @@ class Validation:
 
     @property
     def cv_tseries(self):
+        """
+        Cross-validation indexes if requested (default None)
+        """
         return self.__cv_tseries
 
-    def split_cv(self, timestamp, n_splits_cv=None):
+    def split_cv(self, timestamp: Union[int, str, pd.Timestamp], n_splits_cv=None):
+        """
+        Splits data between train set (<= timestamp) and test set (> timestamp).
+
+        Parameters
+        ----------
+        timestamp : Union[int, pd.Timestamp, str]
+            Split index
+        n_splits_cv : int (default None)
+            Number of folds for cross-validation
+        """
         self.train_data = self.__data.loc[self.__data.index <= timestamp]
         self.test_data = self.__data.loc[self.__data.index > timestamp]
 

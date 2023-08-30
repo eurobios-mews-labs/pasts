@@ -1,19 +1,14 @@
-import numpy as np
 import pandas as pd
 from darts import TimeSeries
 import warnings
 from sklearn.metrics import r2_score, mean_squared_error
 from darts.metrics import mape, smape, mae
-from pasts.test_statistiques import check_arguments
-
-
-def root_mean_squared_error(y_true, y_pred, *args, **kwargs):
-    return np.sqrt(mean_squared_error(y_true, y_pred, *args, **kwargs))
+from pasts.statistical_tests import check_arguments
 
 
 dict_metrics_sklearn = {'r2': r2_score,
                         'mse': mean_squared_error,
-                        'rmse': root_mean_squared_error}
+                        'rmse': mean_squared_error}
 
 dict_metrics_darts = {'mape': mape,
                       'smape': smape,
@@ -47,7 +42,11 @@ class Metrics:
         Computes all requested scores.
     scores_comparison(axis):
         Creates a dataframe for each scorer with the performance of all models.
-        """
+
+    See also
+    --------
+    pasts.signal for details on the Signal object.
+    """
 
     def __init__(self, signal: "Signal", list_metrics: list[str]):
         """
@@ -66,7 +65,7 @@ class Metrics:
         self.dict_metrics_darts = {key: dict_metrics_darts[key] for key in list_metrics
                                    if key in dict_metrics_darts.keys()}
 
-    def scores_sklearn(self, model, axis):
+    def scores_sklearn(self, model: str, axis: int):
         """
         Computes sklearn scores given by dict_metrics_sklearn.
 
@@ -99,11 +98,14 @@ class Metrics:
                 df_temp.dropna(inplace=True)
                 test = df_temp[df_temp.columns[0]].values
                 pred = df_temp[df_temp.columns[1]].values
-                results.loc[col, metric] = self.dict_metrics_sklearn[metric](test, pred)
+                if metric == 'rmse':
+                    results.loc[col, metric] = self.dict_metrics_sklearn[metric](test, pred, squared=False)
+                else:
+                    results.loc[col, metric] = self.dict_metrics_sklearn[metric](test, pred)
 
         return results
 
-    def scores_darts(self, model):
+    def scores_darts(self, model: str):
         """
         Computes sklearn scores given by dict_metrics_sklearn.
 
@@ -133,7 +135,7 @@ class Metrics:
                     results.loc[col, metric] = self.dict_metrics_darts[metric](ts_test[col], ts_pred[col])
         return results
 
-    def compute_scores(self, model: str, axis):
+    def compute_scores(self, model: str, axis: int):
         """
         Computes all scores given in class instantiation.
 
@@ -173,7 +175,7 @@ class Metrics:
             result = pd.concat([df_sk, df_darts], axis=1)
         return result
 
-    def scores_comparison(self, axis):
+    def scores_comparison(self, axis: int):
         """
         Creates a dataframe for each scorer with the performance of all models.
         Makes model comparison easier.

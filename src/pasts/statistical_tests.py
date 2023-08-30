@@ -22,7 +22,6 @@ def check_arguments(
         message: str = ""):
     """
     Checks  boolean condition and raises a ValueError.
-
     """
 
     if condition:
@@ -30,16 +29,51 @@ def check_arguments(
 
 
 class TestStatistics:
+    """
+    A class to apply statistical tests on a Signal object.
+
+    Attributes
+    ----------
+    __signal : Signal
+        Passed Signal object
+
+    Methods
+    -------
+    is_stationary(alpha, test_name, *args, **kwargs) :
+        Applies a stationarity test on entire dataset.
+    is_seasonal(*args, **kwargs) :
+        Tests seasonality in signal.
+    test_causality(alpha, maxlag, *args, **kwargs) :
+        Tests granger causality between features.
+    apply(type_test, test_stat_name, *args, **kwargs) :
+        Applies requested test.
+    """
 
     def __init__(self, signal: "Signal"):
+        """
+        Constructs all the necessary attributes for the TestStatistics object.
+
+        Parameters
+        ----------
+        signal : Signal
+                Signal object on which to apply tests.
+        """
         self.__signal = signal
-        self.results = {}
 
     def is_stationary(self, alpha: int = 0.05, test_name='kpss', *args, **kwargs):
         """
+        Applies a stationarity test on the entire dataset.
 
-        :param test_name: nae of test statistic used to test stationary
-        :param alpha: significance level
+        Parameters
+        ----------
+        test_name : str
+            Name of stationarity test to use
+        alpha : float
+            Significance level (default=0.05)
+
+        Returns
+        -------
+        Whether the null hypothesis is rejected and p-value
         """
 
         if test_name == 'adfuller':
@@ -50,7 +84,6 @@ class TestStatistics:
                'Alternate Hypothesis(HA): Series is stationary .'
             alpha: 
             """
-            # eval('test_name' + "()")
             df_test = adfuller(self.__signal.data, *args, **kwargs)
             df_output = pd.Series(df_test[0:4],
                                   index=['Test Statistic', 'p-value', '#Lags Used', 'Number of Observations Used'])
@@ -67,10 +100,33 @@ class TestStatistics:
             return kpss_output['p-value'] > alpha, kpss_output['p-value']
 
     def is_seasonal(self, *args, **kwargs):
+        """
+        Tests seasonality in signal.
+
+        Returns
+        -------
+        Whether a seasonality was detected and the seasonality period.
+        """
         return check_seasonality, check_seasonality(TimeSeries.from_dataframe(
             self.__signal.data), *args, **kwargs)
 
     def test_causality(self, alpha: int = 0.05, maxlag: int = 1, *args, **kwargs):
+        """
+        Tests granger causality between features.
+
+        Parameters
+        ----------
+        alpha : float
+            Significance level (default=0.05)
+        maxlag : int
+            Computes the test for all lags up to maxlag
+
+        Returns
+        -------
+        Dictionary containing tests results.
+        keys: 'feature1 --> feature2'
+        values: Whether the null hypothesis (absence of correlation) is rejected and the p-value.
+        """
         names = self.__signal.data.columns
         results = {}
         pairs = list(combinations(names, 2))
@@ -87,6 +143,20 @@ class TestStatistics:
         return results
 
     def apply(self, type_test: str, test_stat_name: str, *args, **kwargs):
+        """
+        Applies requested test.
+
+        Parameters
+        ----------
+        type_test : str
+            Type of test to apply ('stationary', 'seasonality' or 'causality')
+        test_stat_name : str
+            Name of test to apply
+
+        Returns
+        -------
+        Result of corresponding test function
+        """
         if self.__signal.properties['is_univariate']:
             dict_test_ = dict_test_uni_variate
         else:

@@ -1,5 +1,4 @@
 import warnings
-from typing import Union
 
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -7,11 +6,48 @@ from pandas.plotting import autocorrelation_plot
 
 
 class Visualisation:
+    """
+    A class to visualize signals.
+
+    Attributes
+    ----------
+    __signal : Signal
+
+    Methods
+    -------
+    plot_signal():
+        Plots raw data and transformed data if operations have been applied.
+    plot_smoothing(resample_size, window_size):
+        Plots resampled data.
+    acf_plot():
+        Plots autocorrelation (only for univariate series).
+    show_predictions():
+        Plots raw data and predicted values on same graph.
+    show_forecast():
+        Plots raw data and forecasted values (for future dates) on same graph.
+
+    See also
+
+    --------
+    pasts.signal for details on the Signal object.
+    pasts.operations for details on operations on time series.
+    pasts.model for details on predictions and forecast methods.
+    """
 
     def __init__(self, signal: "Signal"):
+        """
+        Constructs all the necessary attributes for the Visualization object.
+
+        Parameters
+        ----------
+        signal : Signal
+        """
         self.__signal = signal
 
     def plot_signal(self, **kwargs):
+        """
+        Plots raw data and transformed data if operations have been applied.
+        """
         fig, ax = plt.subplots()
         i = 0
         self.__signal.data.plot(ax=ax, **kwargs)
@@ -38,11 +74,17 @@ class Visualisation:
         ax.legend(['Resample at year frequency', 'Rolling average (smooth), window size=%s' % window_size])
 
     def acf_plot(self):
+        """
+        Plots autocorrelation (only for univariate series)
+        """
         if not self.__signal.properties['is_univariate']:
             raise Exception('Can only plot acf for univariate series')
         autocorrelation_plot(self.__signal.data)
 
     def show_predictions(self):
+        """
+        Plots raw data and predicted values on same graph.
+        """
         fig, ax = plt.subplots()
         if not self.__signal.models:
             raise Exception('No predictions have been computed.')
@@ -63,6 +105,9 @@ class Visualisation:
         plt.show()
 
     def show_forecast(self):
+        """
+        Plots raw data and forecasted values (for future dates) on same graph.
+        """
         fig, ax = plt.subplots()
         n_signals = self.__signal.test_data.shape[1]
 

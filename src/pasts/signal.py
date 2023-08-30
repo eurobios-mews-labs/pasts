@@ -1,6 +1,7 @@
 import copy
 import warnings
 from abc import ABC
+from typing import Union
 
 import pandas as pd
 from darts import TimeSeries
@@ -8,7 +9,7 @@ from scipy import stats
 
 from pasts.model import Model, AggregatedModel
 from pasts.operations import Operation
-from pasts.test_statistiques import TestStatistics, dict_test
+from pasts.statistical_tests import TestStatistics, dict_test
 from pasts.validation import Validation
 from pasts.metrics import Metrics
 
@@ -57,7 +58,7 @@ class Signal(ABC):
         Aggregates a given list of models according to their performance on test data.
     forecast(model_name: str, horizon: int)
         Generates forecasts for future dates.
-        """
+    """
 
     def __init__(self, data: pd.DataFrame):
         """
@@ -93,10 +94,12 @@ class Signal(ABC):
 
     @property
     def operation_data(self):
+        """Operation object called on data"""
         return self.__operation_data
 
     @property
     def operation_train(self):
+        """Operation object called on train set"""
         return self.__operation_train
 
     @property
@@ -161,7 +164,7 @@ class Signal(ABC):
             self.tests_stat[f"{type_test}: {test_stat_name}"] = call_test.apply(type_test, test_stat_name,
                                                                                 *args, **kwargs)
 
-    def validation_split(self, timestamp, n_splits_cv=None):
+    def validation_split(self, timestamp: Union[int, str, pd.Timestamp], n_splits_cv=None):
         """
         Splits the series between train and test sets.
 
@@ -187,7 +190,7 @@ class Signal(ABC):
         self.__cv_tseries = call_validation.cv_tseries
         self.__rest_train_data = self.train_data.copy()
 
-    def filter_outliers(self, threshold=5):
+    def filter_outliers(self, threshold: int = 5):
         """
         Deletes outliers in transformed data and train data.
 
@@ -266,7 +269,7 @@ class Signal(ABC):
             self.models[model]['scores'][score_type] = call_metric.compute_scores(model, axis)
         self.performance_models[score_type] = call_metric.scores_comparison(axis)
 
-    def apply_aggregated_model(self, list_models, refit=False):
+    def apply_aggregated_model(self, list_models: list, refit=False):
         """
         Aggregates a given list of models according to their performance on test data.
 
