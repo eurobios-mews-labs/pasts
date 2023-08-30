@@ -23,7 +23,7 @@ and analysis methods for time series in one unified library
 #### Installation 
 The package can be installed by :
 ```bash
-python3 -m pip install git+https://gitlab.eurobios.com/escb/series-temporelles.git@series_biblio
+python3 -m pip install git+https://gitlab.eurobios.com/escb/series-temporelles.git@aggregated_model
 
 ```
 
@@ -31,30 +31,36 @@ python3 -m pip install git+https://gitlab.eurobios.com/escb/series-temporelles.g
 
 ```python
 import pandas as pd
-import matplotlib.pyplot as plt
 
-from darts.datasets import AirPassengersDataset
-from darts.models import AutoARIMA, Prophet, ExponentialSmoothing
+from darts.datasets import AirPassengersDataset, AustralianTourismDataset
+from darts.models import AutoARIMA, Prophet, ExponentialSmoothing, XGBModel, VARIMA
+from darts.utils.utils import ModelMode, SeasonalityMode
 
-from pasts import SignalAnalysis
-from pasts import Visualisation
+from pasts.signal import Signal
+from pasts.visualization import Visualisation
 
-# ---- Load data ---
+# ---- Load data ----
 series = AirPassengersDataset().load()
 dt = pd.DataFrame(series.values())
 dt.rename(columns={0: 'passengers'}, inplace=True)
 dt.index = series.time_index
 
-# ---- Vizualise data ---
-Visualisation(dt).plot_signal()
-Visualisation(dt).plot_smoothing()
-signal = SignalAnalysis(dt)
-signal.profiling()
-report = signal.apply_test('stationary', 'kpss')
+# --- Visualize data ---
+signal = Signal(dt)
+print(signal.properties)
+Visualisation(signal).plot_signal()
+Visualisation(signal).acf_plot()
+signal.apply_stat_test('stationary')
+signal.apply_stat_test('stationary', 'kpss')
+signal.apply_stat_test('seasonality')
 
-# ---- Machine Learning ---
-timestamp = '1957-06-01'
-signal.split_cv(timestamp=timestamp)
+# --- Machine Learning ---
+timestamp = '1958-12-01'
+signal.validation_split(timestamp=timestamp)
+signal.apply_operations(['trend', 'seasonality'])
+Visualisation(signal).plot_signal()
+
+signal.apply_model(ExponentialSmoothing())
 
 signal.apply_model(AutoARIMA())
 signal.apply_model(Prophet())
@@ -64,15 +70,26 @@ param_grid = {'trend': [ModelMode.ADDITIVE, ModelMode.MULTIPLICATIVE, ModelMode.
               }
 signal.apply_model(ExponentialSmoothing(), gridsearch=True, parameters=param_grid)
 
-# --- get some results ---
-print(signal.scores)
-exp_smoothing_pred = signal.results['ExponentialSmoothing']['predictions']
-exp_smoothing_params = signal.results['ExponentialSmoothing']['best_parameters']
+# --- Compute scores ---
+signal.compute_scores()
+signal.compute_scores(axis=0)
 
-# ---  Vizualise the predictions ---
-signal.show_predictions()
+# ---  Visualize predictions ---
+Visualisation(signal).show_predictions()
 
+# --- Aggregated Model ---
+signal.apply_aggregated_model([ExponentialSmoothing(), Prophet()])
+signal.compute_scores(axis=1)
+Visualisation(signal).show_predictions()
 
+# --- Forecast ---
+signal.forecast("Prophet", 100)
+signal.forecast("AggregatedModel", 100)
+signal.forecast("AutoARIMA", 100)
+signal.forecast("ExponentialSmoothing", 100)
+
+# --- Visualize forecasts ---
+Visualisation(signal).show_forecast()
 ```
 
 ### Author
