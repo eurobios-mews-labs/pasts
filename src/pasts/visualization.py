@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from pandas.plotting import autocorrelation_plot
 
 
-class Visualisation:
+class Visualization:
     """
     A class to visualize signals.
 

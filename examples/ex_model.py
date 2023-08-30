@@ -9,15 +9,16 @@ from pasts.visualization import Visualisation
 
 
 if __name__ == '__main__':
-    # Univariate
-    # ---- Load data ---
+
+    # ----- Univariate -----
+
+    # ---- Load data ----
     series = AirPassengersDataset().load()
     dt = pd.DataFrame(series.values())
     dt.rename(columns={0: 'passengers'}, inplace=True)
     dt.index = series.time_index
-    # dt.loc[pd.to_datetime('1960-04-01')] = np.nan
 
-    # ---- Visualize data ---
+    # --- Visualize data ---
     signal = Signal(dt)
     print(signal.properties)
     Visualisation(signal).plot_signal()
@@ -26,7 +27,7 @@ if __name__ == '__main__':
     signal.apply_stat_test('stationary', 'kpss')
     signal.apply_stat_test('seasonality')
 
-    # ---- Machine Learning ---
+    # --- Machine Learning ---
     timestamp = '1958-12-01'
     signal.validation_split(timestamp=timestamp)
     signal.apply_operations(['trend', 'seasonality'])
@@ -46,7 +47,7 @@ if __name__ == '__main__':
     signal.compute_scores()
     signal.compute_scores(axis=0)
 
-    # ---  Visualize the predictions ---
+    # ---  Visualize predictions ---
     Visualisation(signal).show_predictions()
 
     # --- Aggregated Model ---
@@ -59,20 +60,25 @@ if __name__ == '__main__':
     signal.forecast("AggregatedModel", 100)
     signal.forecast("AutoARIMA", 100)
     signal.forecast("ExponentialSmoothing", 100)
+
+    # --- Visualize forecasts ---
     Visualisation(signal).show_forecast()
 
-    # Multivariate
+    # ----- Multivariate -----
+
+    # ---- Load data ----
     series_m = AustralianTourismDataset().load()[['Hol', 'VFR', 'Oth']]
     df_m = pd.DataFrame(series_m.values())
     df_m.rename(columns={0: 'Hol', 1: 'VFR', 2: 'Oth'}, inplace=True)
     df_m.index = series_m.time_index
 
+    # --- Visualize data ---
     signal_m = Signal(df_m)
     print(signal_m.properties)
     signal_m.apply_stat_test('causality')
     Visualisation(signal_m).plot_signal()
 
-    # ---- Machine Learning ---
+    # --- Machine Learning ---
     timestamp = 30
     signal_m.validation_split(timestamp=timestamp)
     signal_m.apply_operations(['trend'])
@@ -90,13 +96,13 @@ if __name__ == '__main__':
     signal_m.apply_aggregated_model([XGBModel(lags=[-1, -2, -3]), VARIMA()])
     signal_m.compute_scores()
 
-    # ---  Visualize the predictions ---
+    # ---  Visualize predictions ---
     Visualisation(signal_m).show_predictions()
 
     # --- Forecast ---
     signal_m.forecast("AggregatedModel", 50)
     signal_m.forecast("VARIMA", 10)
     signal_m.forecast("XGBModel", 10)
+
+    # --- Visualize forecasts ---
     Visualisation(signal_m).show_forecast()
-
-
