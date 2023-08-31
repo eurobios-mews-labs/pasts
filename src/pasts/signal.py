@@ -35,7 +35,7 @@ def profiling(data: pd.DataFrame) -> dict:
 
     Returns
     -------
-    Dictionary of properties
+    Dictionary of properties of passed dataset.
     """
     return {'shape': data.shape,
             'types': data.dtypes,
@@ -78,8 +78,9 @@ class Signal(ABC):
         ----------
         data : pd.Dataframe
                 Dataframe of time series with time as index and one or several entities as columns.
-                Index must be of type DatetimeIndex or RangeIndex.
+                Index must be of type DatetimeIndex.
         """
+        self.__data_index = data.index
         self.__data = data
         self.__rest_data = data.copy()
         self.__operation_train = None
@@ -97,6 +98,17 @@ class Signal(ABC):
     def data(self):
         """Input time series as a pandas dataframe"""
         return self.__data
+
+    @property
+    def data_index(self):
+        """Input time series as a pandas dataframe"""
+        return self.__data_index
+
+    @data_index.setter
+    def data_index(self, index):
+        if not (index.dtype == 'datetime64[ns]'):
+            raise Exception("Index must a Timestamp")
+        self.__data_index = index
 
     @property
     def rest_data(self):
@@ -223,6 +235,19 @@ class Signal(ABC):
         self.__rest_train_data = self.rest_train_data.where(~outliers_mask, other=pd.NA)
 
     def apply_operations(self, list_op: list[str]) -> None:
+        """
+        Applies operations on whole data and train data if it exists.
+
+        Parameters
+        ----------
+        list_op : list[str]
+            List of names of operations to apply ('trend', 'seasonality').
+            Only works if time index is of type DatetimeIndex.
+
+        Returns
+        -------
+        None
+        """
         self.__operation_data = Operation(self.data)
         self.__rest_data = self.operation_data.fit_transform(list_op)
         if self.train_data is not None:
@@ -238,7 +263,7 @@ class Signal(ABC):
         Parameters
         ----------
         model
-                Instance of a model. Will be refitted even if it has already been.
+                Instance of a model from darts. Will be refitted even if it has already been.
         gridsearch : bool, optional
                 Whether to perform a gridsearch (default is False)
         parameters : pd.Dataframe, optional
@@ -333,9 +358,10 @@ class Signal(ABC):
             for model in self.models['AggregatedModel']['models'].keys():
                 self.models[model]['final_estimator'] = Model(self).compute_final_estimator(model)
                 self.models[model]['forecast'] = self.models[model]['final_estimator'].predict(horizon)
-                if self.operation_data.dict_op:
-                    self.models[model]['forecast'] = TimeSeries.from_dataframe(
-                        self.operation_data.transform(self.models[model]['forecast'].pd_dataframe()))
+                if self.operation_data is not None:
+                    if self.operation_data.dict_op:
+                        self.models[model]['forecast'] = TimeSeries.from_dataframe(
+                            self.operation_data.transform(self.models[model]['forecast'].pd_dataframe()))
 
             self.models['AggregatedModel']['forecast'] = AggregatedModel(self).compute_final_estimator()
         else:
@@ -343,6 +369,7 @@ class Signal(ABC):
                 raise Exception(f'{model_name} has not been trained.')
             self.models[model_name]['final_estimator'] = Model(self).compute_final_estimator(model_name)
             self.models[model_name]['forecast'] = self.models[model_name]['final_estimator'].predict(horizon)
-            if self.operation_data.dict_op:
-                self.models[model_name]['forecast'] = TimeSeries.from_dataframe(
-                    self.operation_data.transform(self.models[model_name]['forecast'].pd_dataframe()))
+            if self.operation_data is not None:
+                if self.operation_data.dict_op:
+                    self.models[model_name]['forecast'] = TimeSeries.from_dataframe(
+                        self.operation_data.transform(self.models[model_name]['forecast'].pd_dataframe()))

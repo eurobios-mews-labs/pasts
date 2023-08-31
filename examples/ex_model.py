@@ -38,6 +38,7 @@ if __name__ == '__main__':
     signal.apply_model(AutoARIMA())
     signal.apply_model(Prophet())
 
+    # If trend and seasonality have been removed, cannot perform this gridsearch
     param_grid = {'trend': [ModelMode.ADDITIVE, ModelMode.MULTIPLICATIVE, ModelMode.NONE],
                   'seasonal': [SeasonalityMode.ADDITIVE, SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.NONE],
                   }
@@ -51,7 +52,7 @@ if __name__ == '__main__':
     Visualization(signal).show_predictions()
 
     # --- Aggregated Model ---
-    signal.apply_aggregated_model([ExponentialSmoothing(), Prophet()])
+    signal.apply_aggregated_model([AutoARIMA(), Prophet()])
     signal.compute_scores(axis=1)
     Visualization(signal).show_predictions()
 
@@ -70,7 +71,7 @@ if __name__ == '__main__':
     series_m = AustralianTourismDataset().load()[['Hol', 'VFR', 'Oth']]
     df_m = pd.DataFrame(series_m.values())
     df_m.rename(columns={0: 'Hol', 1: 'VFR', 2: 'Oth'}, inplace=True)
-    df_m.index = series_m.time_index
+    df_m.index = pd.date_range(start='2020-01-01', freq='MS', periods=len(df_m)) # index must be a date
 
     # --- Visualize data ---
     signal_m = Signal(df_m)
@@ -79,7 +80,7 @@ if __name__ == '__main__':
     Visualization(signal_m).plot_signal()
 
     # --- Machine Learning ---
-    timestamp = 30
+    timestamp = '2022-06-01'
     signal_m.validation_split(timestamp=timestamp)
     signal_m.apply_operations(['trend'])
     Visualization(signal_m).plot_signal()

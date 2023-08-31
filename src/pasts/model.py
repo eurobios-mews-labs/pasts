@@ -72,7 +72,7 @@ class Model(ModelAbstract):
 
         Parameters
         ----------
-        model : instance of a model from sklearn or darts
+        model : instance of a model from darts
                Model to apply
         gridsearch : bool, optional
                Whether to perform a gridsearch (default is False)
@@ -107,9 +107,9 @@ class Model(ModelAbstract):
 
         model.fit(train_tseries)
         forecast = model.predict(len(self.signal.test_data))
-
-        if self.signal.operation_train.dict_op:
-            forecast = TimeSeries.from_dataframe(self.signal.operation_train.transform(forecast.pd_dataframe()))
+        if self.signal.operation_train is not None:
+            if self.signal.operation_train.dict_op:
+                forecast = TimeSeries.from_dataframe(self.signal.operation_train.transform(forecast.pd_dataframe()))
 
         return {'predictions': forecast, 'best_parameters': best_parameters, 'scores': {'unit_wise': {},
                                                                                         'time_wise': {}},
