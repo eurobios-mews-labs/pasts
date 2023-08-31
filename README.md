@@ -29,6 +29,7 @@ python3 -m pip install git+https://gitlab.eurobios.com/escb/series-temporelles.g
 
 ## Usage and example
 You can find examples for the `Signal` class for univariate and multivariate series here: https://gitlab.eurobios.com/escb/series-temporelles/-/blob/aggregated_model/examples/ex_model.py?ref_type=heads
+
 The `Operation` class can be used on its own. Find an example here: https://gitlab.eurobios.com/escb/series-temporelles/-/blob/aggregated_model/examples/ex_operations.py?ref_type=heads
 
 ### Start project
