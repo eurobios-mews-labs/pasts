@@ -5,7 +5,7 @@ from darts.models import AutoARIMA, Prophet, ExponentialSmoothing, XGBModel, VAR
 from darts.utils.utils import ModelMode, SeasonalityMode
 
 from pasts.signal import Signal
-from pasts.visualization import Visualisation
+from pasts.visualization import Visualization
 
 
 if __name__ == '__main__':
@@ -21,8 +21,8 @@ if __name__ == '__main__':
     # --- Visualize data ---
     signal = Signal(dt)
     print(signal.properties)
-    Visualisation(signal).plot_signal()
-    Visualisation(signal).acf_plot()
+    Visualization(signal).plot_signal()
+    Visualization(signal).acf_plot()
     signal.apply_stat_test('stationary')
     signal.apply_stat_test('stationary', 'kpss')
     signal.apply_stat_test('seasonality')
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     timestamp = '1958-12-01'
     signal.validation_split(timestamp=timestamp)
     signal.apply_operations(['trend', 'seasonality'])
-    Visualisation(signal).plot_signal()
+    Visualization(signal).plot_signal()
 
     signal.apply_model(ExponentialSmoothing())
 
@@ -48,12 +48,12 @@ if __name__ == '__main__':
     signal.compute_scores(axis=0)
 
     # ---  Visualize predictions ---
-    Visualisation(signal).show_predictions()
+    Visualization(signal).show_predictions()
 
     # --- Aggregated Model ---
     signal.apply_aggregated_model([ExponentialSmoothing(), Prophet()])
     signal.compute_scores(axis=1)
-    Visualisation(signal).show_predictions()
+    Visualization(signal).show_predictions()
 
     # --- Forecast ---
     signal.forecast("Prophet", 100)
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     signal.forecast("ExponentialSmoothing", 100)
 
     # --- Visualize forecasts ---
-    Visualisation(signal).show_forecast()
+    Visualization(signal).show_forecast()
 
     # ----- Multivariate -----
 
@@ -76,13 +76,13 @@ if __name__ == '__main__':
     signal_m = Signal(df_m)
     print(signal_m.properties)
     signal_m.apply_stat_test('causality')
-    Visualisation(signal_m).plot_signal()
+    Visualization(signal_m).plot_signal()
 
     # --- Machine Learning ---
     timestamp = 30
     signal_m.validation_split(timestamp=timestamp)
     signal_m.apply_operations(['trend'])
-    Visualisation(signal_m).plot_signal()
+    Visualization(signal_m).plot_signal()
     signal_m.apply_model(XGBModel(lags=[-1, -2, -3]))
 
     param_grid = {'trend': [None, 'c'],
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     signal_m.compute_scores()
 
     # ---  Visualize predictions ---
-    Visualisation(signal_m).show_predictions()
+    Visualization(signal_m).show_predictions()
 
     # --- Forecast ---
     signal_m.forecast("AggregatedModel", 50)
@@ -105,4 +105,4 @@ if __name__ == '__main__':
     signal_m.forecast("XGBModel", 10)
 
     # --- Visualize forecasts ---
-    Visualisation(signal_m).show_forecast()
+    Visualization(signal_m).show_forecast()

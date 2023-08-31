@@ -1,4 +1,15 @@
+# Copyright 2023 Eurobios
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and limitations under the License.
+
 from itertools import combinations
+from typing import Union
 
 import pandas as pd
 
@@ -60,7 +71,7 @@ class TestStatistics:
         """
         self.__signal = signal
 
-    def is_stationary(self, alpha: int = 0.05, test_name='kpss', *args, **kwargs):
+    def is_stationary(self, alpha: int = 0.05, test_name='kpss', *args, **kwargs) -> tuple:
         """
         Applies a stationarity test on the entire dataset.
 
@@ -99,7 +110,7 @@ class TestStatistics:
             kpss_output = pd.Series(kpss_test[0:3], index=['Test Statistic', 'p-value', '#Lags Used'])
             return kpss_output['p-value'] > alpha, kpss_output['p-value']
 
-    def is_seasonal(self, *args, **kwargs):
+    def is_seasonal(self, *args, **kwargs) -> tuple:
         """
         Tests seasonality in signal.
 
@@ -110,7 +121,7 @@ class TestStatistics:
         return check_seasonality, check_seasonality(TimeSeries.from_dataframe(
             self.__signal.data), *args, **kwargs)
 
-    def test_causality(self, alpha: int = 0.05, maxlag: int = 1, *args, **kwargs):
+    def test_causality(self, alpha: int = 0.05, maxlag: int = 1, *args, **kwargs) -> dict:
         """
         Tests granger causality between features.
 
@@ -142,7 +153,7 @@ class TestStatistics:
             results[f"{series2}-->{series1}"] = (pvalue2 <= alpha, pvalue2)
         return results
 
-    def apply(self, type_test: str, test_stat_name: str, *args, **kwargs):
+    def apply(self, type_test: str, test_stat_name: str, *args, **kwargs) -> Union[tuple, dict]:
         """
         Applies requested test.
 

@@ -1,3 +1,13 @@
+# Copyright 2023 Eurobios
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and limitations under the License.
+
 import warnings
 
 import pandas as pd
@@ -44,7 +54,7 @@ class Visualization:
         """
         self.__signal = signal
 
-    def plot_signal(self, **kwargs):
+    def plot_signal(self, **kwargs) -> None:
         """
         Plots raw data and transformed data if operations have been applied.
         """
@@ -61,7 +71,7 @@ class Visualization:
                 i += 1
         plt.show()
 
-    def plot_smoothing(self, resample_size: str = 'A', window_size: int = 12):
+    def plot_smoothing(self, resample_size: str = 'A', window_size: int = 12) -> None:
         """
          :param resample_size: calendar for resample, 'A' : year, 'D': Day, 'M': Month
          :type window_size: int : the size of window to rolling
@@ -73,7 +83,7 @@ class Visualization:
         roll_yr.plot(style='--', ax=ax)
         ax.legend(['Resample at year frequency', 'Rolling average (smooth), window size=%s' % window_size])
 
-    def acf_plot(self):
+    def acf_plot(self) -> None:
         """
         Plots autocorrelation (only for univariate series)
         """
@@ -81,7 +91,7 @@ class Visualization:
             raise Exception('Can only plot acf for univariate series')
         autocorrelation_plot(self.__signal.data)
 
-    def show_predictions(self):
+    def show_predictions(self) -> None:
         """
         Plots raw data and predicted values on same graph.
         """
@@ -104,7 +114,7 @@ class Visualization:
         plt.ylabel('values')
         plt.show()
 
-    def show_forecast(self):
+    def show_forecast(self) -> None:
         """
         Plots raw data and forecasted values (for future dates) on same graph.
         """

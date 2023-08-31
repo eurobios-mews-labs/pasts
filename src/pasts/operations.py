@@ -1,8 +1,17 @@
+# Copyright 2023 Eurobios
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and limitations under the License.
+
 import numpy as np
 import pandas as pd
 from darts import TimeSeries
 from darts.models import XGBModel
-from darts.utils.historical_forecasts.utils import TimeIndex
 from darts.utils.statistics import check_seasonality
 from sklearn.linear_model import LinearRegression
 
@@ -48,7 +57,7 @@ class Trend:
     def __init__(self):
         ...
 
-    def fit(self, X: pd.DataFrame, y=None):
+    def fit(self, X: pd.DataFrame) -> "Trend":
         """
         Finds linear trend in passed series.
 
@@ -76,7 +85,7 @@ class Trend:
         self.t0_ = self.time_index[-1]
         return self
 
-    def _from_i_to_vector(self, i: int):
+    def _from_i_to_vector(self, i: int) -> np.array:
         """
         Computes past or future float index of length |i|.
 
@@ -96,7 +105,7 @@ class Trend:
         else:
             return self.time_index[i:]
 
-    def _from_i_to_time_index(self, i: int):
+    def _from_i_to_time_index(self, i: int) -> pd.DatetimeIndex:
         """
         Computes past or future time index of length |i|.
 
@@ -117,7 +126,7 @@ class Trend:
             time_index = self.origin_index[i:]
         return time_index
 
-    def _t(self, i: int):
+    def _t(self, i: int) -> np.array:
         """
         Creates a matrix to be used when transforming a series.
 
@@ -136,7 +145,7 @@ class Trend:
             np.abs(i)))
         return t
 
-    def _intercept_to_frame(self, shape: int):
+    def _intercept_to_frame(self, shape: int) -> np.array:
         """
         Converts the trend intercept into a matrix, used for transforming.
 
@@ -153,7 +162,7 @@ class Trend:
             self.coef_.shape[0],
             shape))
 
-    def transform(self, i: int, y=None):
+    def transform(self, i: int) -> pd.DataFrame:
         """
         Computes Dataframe to remove trend from a series.
         Removes trend when added to a dataframe of same shape.
@@ -174,7 +183,7 @@ class Trend:
                             columns=self._from_i_to_time_index(i),
                             index=self.features_.to_list()).T
 
-    def reverse_transform(self, i: int, y=None):
+    def reverse_transform(self, i: int) -> pd.DataFrame:
         """
         Computes Dataframe to add trend to a series.
         Adds trend when added to a dataframe of same shape.
@@ -231,7 +240,7 @@ class Seasonality:
         """
         self.seasonality = int(seasonality)
 
-    def fit(self, X: pd.DataFrame):
+    def fit(self, X: pd.DataFrame) -> None:
         """
         Finds seasonal component in passed series.
         Fills attributes seasonal_component and estimator_future_season.
@@ -240,7 +249,7 @@ class Seasonality:
         ----------
         X : pd.Dataframe
             Time series.
-            Index must be TimeIndex.
+            Index must be of type DatetimeIndex.
 
         Returns
         -------
@@ -259,7 +268,7 @@ class Seasonality:
         self.estimator_future_season = XGBModel(lags=self.seasonality)
         self.estimator_future_season.fit(TimeSeries.from_dataframe(self.seasonal_component))
 
-    def transform(self, i: int):
+    def transform(self, i: int) -> pd.DataFrame:
         """
         Computes Dataframe to remove seasonal component from a series.
         Removes seasonality when added to a dataframe of same shape.
@@ -279,7 +288,7 @@ class Seasonality:
             output = self.seasonal_component.iloc[i:]
         return - output
 
-    def reverse_transform(self, i: int):
+    def reverse_transform(self, i: int) -> pd.DataFrame:
         """
         Computes Dataframe to add seasonal component to a series.
         Adds seasonality when added to a dataframe of same shape.
@@ -338,13 +347,14 @@ class Operation:
         ----------
         train_data: pd.Dataframe
             Time series on which to fit operators.
+            Index must be of type DatetimeIndex.
         """
         self.train_data = train_data
         self.rest_data = train_data.copy()
         self.dict_op = {}
-        self.__implemented_operations = {'trend': self.trend, 'seasonality': self.season}
+        self.__implemented_operations = {'trend': self._trend, 'seasonality': self._season}
 
-    def trend(self):
+    def _trend(self) -> None:
         """
         Fits Trend operator on training data.
         Adds item in dict_op.
@@ -353,7 +363,7 @@ class Operation:
         cls.fit(self.rest_data)
         self.dict_op['trend'] = (cls.transform, cls.reverse_transform)
 
-    def season(self):
+    def _season(self) -> None:
         """
         Fits Seasonality operator on training data.
         Adds item in dict_op.
@@ -367,7 +377,7 @@ class Operation:
             cls.fit(self.rest_data)
             self.dict_op['seasonality'] = (cls.transform, cls.reverse_transform)
 
-    def fit_transform(self, list_op: list[str]):
+    def fit_transform(self, list_op: list[str]) -> pd.DataFrame:
         """
         Fits requested operators and transforms training data.
 
@@ -389,7 +399,7 @@ class Operation:
             self.rest_data += frame
         return self.rest_data
 
-    def transform(self, data: pd.DataFrame, reverse=True):
+    def transform(self, data: pd.DataFrame, reverse=True) -> pd.DataFrame:
         """
         Applies operations or reverse operations on passed data.
 
@@ -397,6 +407,7 @@ class Operation:
         ----------
         data : pd.Dataframe
             Time series to transform.
+            Index must be of type DatetimeIndex.
         reverse : bool (default=True)
             Whether to perform the reverse operation.
 
@@ -416,8 +427,3 @@ class Operation:
             frame = op[a](i)
             data += frame
         return data
-
-
-
-
-

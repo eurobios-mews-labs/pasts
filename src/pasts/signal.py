@@ -1,3 +1,13 @@
+# Copyright 2023 Eurobios
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and limitations under the License.
+
 import copy
 import warnings
 from abc import ABC
@@ -14,14 +24,14 @@ from pasts.validation import Validation
 from pasts.metrics import Metrics
 
 
-def profiling(data: pd.DataFrame):
+def profiling(data: pd.DataFrame) -> dict:
     """
     Finds some properties about time series.
 
     Parameters
     ----------
     data: pd.Dataframe
-        Dataframe of time series with time as index and entities as columns
+        Dataframe of time series with time as index and entities as columns.
 
     Returns
     -------
@@ -68,6 +78,7 @@ class Signal(ABC):
         ----------
         data : pd.Dataframe
                 Dataframe of time series with time as index and one or several entities as columns.
+                Index must be of type DatetimeIndex or RangeIndex.
         """
         self.__data = data
         self.__rest_data = data.copy()
@@ -133,7 +144,7 @@ class Signal(ABC):
         contain a dataframe for each scorer, with scores computed for all models."""
         return self.__performance_models
 
-    def apply_stat_test(self, type_test: str, test_stat_name: str = None, *args, **kwargs):
+    def apply_stat_test(self, type_test: str, test_stat_name: str = None, *args, **kwargs) -> None:
         """
         Applies statistical test to the univariate or multivariate series.
 
@@ -164,7 +175,7 @@ class Signal(ABC):
             self.tests_stat[f"{type_test}: {test_stat_name}"] = call_test.apply(type_test, test_stat_name,
                                                                                 *args, **kwargs)
 
-    def validation_split(self, timestamp: Union[int, str, pd.Timestamp], n_splits_cv=None):
+    def validation_split(self, timestamp: Union[int, str, pd.Timestamp], n_splits_cv=None) -> None:
         """
         Splits the series between train and test sets.
 
@@ -190,7 +201,7 @@ class Signal(ABC):
         self.__cv_tseries = call_validation.cv_tseries
         self.__rest_train_data = self.train_data.copy()
 
-    def filter_outliers(self, threshold: int = 5):
+    def filter_outliers(self, threshold: int = 5) -> None:
         """
         Deletes outliers in transformed data and train data.
 
@@ -211,14 +222,14 @@ class Signal(ABC):
         outliers_mask = (z_scores > threshold) | (z_scores < -threshold)
         self.__rest_train_data = self.rest_train_data.where(~outliers_mask, other=pd.NA)
 
-    def apply_operations(self, list_op: list[str]):
+    def apply_operations(self, list_op: list[str]) -> None:
         self.__operation_data = Operation(self.data)
         self.__rest_data = self.operation_data.fit_transform(list_op)
         if self.train_data is not None:
             self.__operation_train = Operation(self.train_data)
             self.__rest_train_data = self.operation_train.fit_transform(list_op)
 
-    def apply_model(self, model, gridsearch=False, parameters=None):
+    def apply_model(self, model, gridsearch=False, parameters=None) -> None:
         """
         Applies statistical, machine learning of deep learning model to the series.
 
@@ -239,7 +250,7 @@ class Signal(ABC):
         """
         self.models[model.__class__.__name__] = Model(self).apply(copy.deepcopy(model), gridsearch, parameters)
 
-    def compute_scores(self, list_metrics: list[str] = None, axis=1):
+    def compute_scores(self, list_metrics: list[str] = None, axis=1) -> None:
         """
         Computes scores of models on test data.
 
@@ -269,7 +280,7 @@ class Signal(ABC):
             self.models[model]['scores'][score_type] = call_metric.compute_scores(model, axis)
         self.performance_models[score_type] = call_metric.scores_comparison(axis)
 
-    def apply_aggregated_model(self, list_models: list, refit=False):
+    def apply_aggregated_model(self, list_models: list, refit=False) -> None:
         """
         Aggregates a given list of models according to their performance on test data.
 
@@ -298,7 +309,7 @@ class Signal(ABC):
                     self.apply_model(model)
         self.models['AggregatedModel'] = AggregatedModel(self).apply(dict_models)
 
-    def forecast(self, model_name: str, horizon: int):
+    def forecast(self, model_name: str, horizon: int) -> None:
         """
         Generates forecasts for future dates.
 

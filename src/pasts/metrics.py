@@ -1,3 +1,13 @@
+# Copyright 2023 Eurobios
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and limitations under the License.
+
 import pandas as pd
 from darts import TimeSeries
 import warnings
@@ -65,7 +75,7 @@ class Metrics:
         self.dict_metrics_darts = {key: dict_metrics_darts[key] for key in list_metrics
                                    if key in dict_metrics_darts.keys()}
 
-    def scores_sklearn(self, model: str, axis: int):
+    def _scores_sklearn(self, model: str, axis: int) -> pd.DataFrame:
         """
         Computes sklearn scores given by dict_metrics_sklearn.
 
@@ -105,7 +115,7 @@ class Metrics:
 
         return results
 
-    def scores_darts(self, model: str):
+    def _scores_darts(self, model: str) -> pd.DataFrame:
         """
         Computes sklearn scores given by dict_metrics_sklearn.
 
@@ -135,7 +145,7 @@ class Metrics:
                     results.loc[col, metric] = self.dict_metrics_darts[metric](ts_test[col], ts_pred[col])
         return results
 
-    def compute_scores(self, model: str, axis: int):
+    def compute_scores(self, model: str, axis: int) -> pd.DataFrame:
         """
         Computes all scores given in class instantiation.
 
@@ -166,16 +176,16 @@ class Metrics:
                 warnings.warn('R2 cannot be computed.')
                 del self.dict_metrics_sklearn['r2']
 
-        df_sk = self.scores_sklearn(model, axis)
+        df_sk = self._scores_sklearn(model, axis)
         if axis == 0:
             warnings.warn('Only R2, MSE and RMSE can be computed for each date.')
             result = df_sk
         else:
-            df_darts = self.scores_darts(model)
+            df_darts = self._scores_darts(model)
             result = pd.concat([df_sk, df_darts], axis=1)
         return result
 
-    def scores_comparison(self, axis: int):
+    def scores_comparison(self, axis: int) -> dict:
         """
         Creates a dataframe for each scorer with the performance of all models.
         Makes model comparison easier.
@@ -187,7 +197,9 @@ class Metrics:
 
         Returns
         -------
-        Dataframe of scores with unit or time as index and metrics as columns
+        Dictionary of scores :
+            keys: names of metrics
+            values: pd.Dataframe of scores with unit or time as index and models as columns
         """
         if axis == 1:
             score_type = 'unit_wise'

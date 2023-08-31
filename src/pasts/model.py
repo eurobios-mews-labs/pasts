@@ -1,3 +1,13 @@
+# Copyright 2023 Eurobios
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#     http://www.apache.org/licenses/LICENSE-2.0
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and limitations under the License.
+
 from abc import ABC, abstractmethod
 from pandas import MultiIndex
 
@@ -55,7 +65,7 @@ class Model(ModelAbstract):
         """
         super().__init__(signal)
 
-    def apply(self, model, gridsearch: bool=False, parameters: dict=None) -> dict:
+    def apply(self, model, gridsearch: bool = False, parameters: dict = None) -> dict:
         """
         Applies given model on test set.
         If gridsearch is True and parameters are given, performs a gridsearch and saves the best parameters.
@@ -139,7 +149,7 @@ class AggregatedModel(ModelAbstract):
         """
         super().__init__(signal)
 
-    def apply(self, dict_models: dict):
+    def apply(self, dict_models: dict) -> dict:
         """
         Aggregates given models according to their performance on test set.
         Requires the models to have been applied on test set.
@@ -186,7 +196,7 @@ class AggregatedModel(ModelAbstract):
         return {'predictions': TimeSeries.from_dataframe(df_ag), 'weights': weights, 'models': dict_models,
                 'scores': {}}
 
-    def compute_final_estimator(self):
+    def compute_final_estimator(self) -> TimeSeries:
         """
         Aggregates all computed forecasts.
 
