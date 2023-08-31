@@ -68,6 +68,7 @@ Visualization(signal).plot_signal()
 Visualization(signal).acf_plot()
 ```
 Yield:
+
 <img src="examples/ex_plot1.png" alt="drawing" width="700"/>
 <img src="examples/ex_acf.png" alt="drawing" width="700"/>
 
