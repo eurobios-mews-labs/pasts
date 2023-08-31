@@ -64,8 +64,8 @@ Visualization(signal).plot_signal()
 Visualization(signal).acf_plot()
 ```
 Yield:
-<img src="examples/ex_plot1.png" alt="drawing" width="350"/>
-<img src="examples/ex_acf.png" alt="drawing" width="350"/>
+<img src="examples/ex_plot1.png" alt="drawing" width="800"/>
+<img src="examples/ex_acf.png" alt="drawing" width="800"/>
 
 You can also perform some statistical tests specific to time series.
 ```python
@@ -93,7 +93,7 @@ In this example, both linear trend and seasonality are removed. Machine Learning
 signal.apply_operations(['trend', 'seasonality'])
 Visualization(signal).plot_signal()
 ```
-<img src="examples/ex_op.png" alt="drawing" width="350"/>
+<img src="examples/ex_op.png" alt="drawing" width="800"/>
 
 Use the method `apply_model` to apply models of your choice. If the parameters `gridsearch` and `parameters` are passed, a gridsearch will be performed.
 ```python
@@ -135,7 +135,7 @@ Visualize predictions with the `Visualization` class:
 ```python
 Visualization(signal).show_predictions()
 ```
-<img src="examples/ex_pred.png" alt="drawing" width="350"/>
+<img src="examples/ex_pred.png" alt="drawing" width="800"/>
 
 When models have been trained, you can compute predictions for future dates using the `forecast`method by passing it the name of a trained model and the horizon of prediction.
 ```python
@@ -144,7 +144,7 @@ signal.forecast("AutoARIMA", 100)
 signal.forecast("ExponentialSmoothing", 100)
 Visualization(signal).show_forecast()
 ```
-<img src="examples/ex_fc.png" alt="drawing" width="350"/>
+<img src="examples/ex_fc.png" alt="drawing" width="800"/>
 
 #### Aggregation of models
 The method `apply_aggregated_model` aggregates the passed list of trained estimators according to their RMSE on train data. All passed models will be kept, so make sure to exclude models that are always less performant. The more a model performs compared to others, the greater its weight in agregation.
@@ -155,6 +155,6 @@ signal.compute_scores(axis=1)
 Visualization(signal).show_predictions()
 signal.forecast("AggregatedModel", 100)
 ```
-<img src="examples/ex_fc_ag.png" alt="drawing" width="350"/>
+<img src="examples/ex_fc_ag.png" alt="drawing" width="800"/>
 
 ### Author
