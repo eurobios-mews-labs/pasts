@@ -59,9 +59,12 @@ print(signal.properties)
 Output:
 ```python
 >>> {'shape': (144, 1), 'types': passengers    float64
-dtype: object, 'is_univariate': True, 'nanSum': passengers    0
-dtype: int64, 'quantiles':              0.00   0.05   0.50    0.95    0.99   1.00
-passengers  104.0  121.6  265.5  488.15  585.79  622.0}
+dtype: object, 
+'is_univariate': True, 
+'nanSum': passengers   0
+dtype: int64, 
+'quantiles':   0.00   0.05   0.50    0.95    0.99   1.00
+passengers     104.0  121.6  265.5  488.15  585.79  622.0}
 ```
 ```python
 Visualization(signal).plot_signal()
@@ -122,9 +125,11 @@ print(signal.models['Prophet']['scores'])
 ```
 Output:
 ```python
->>> {'unit_wise':      r2        mse       rmse      mape     smape        mae
+>>> {'unit_wise':      
+                      r2        mse       rmse      mape     smape        mae
 component                                                                
-passengers        0.866962  590.08557  24.291677  3.694311  3.743241  18.008002, 'time_wise': {}}
+passengers        0.866962  590.08557  24.291677  3.694311  3.743241  18.008002, 
+'time_wise': {}}
 ```
 ```python
 print(signal.performance_models['unit_wise']['rmse'])
