@@ -59,16 +59,20 @@ class Visualization:
         Plots raw data and transformed data if operations have been applied.
         """
         fig, ax = plt.subplots()
+        legend = []
         i = 0
         self.__signal.data.plot(ax=ax, **kwargs)
         for col in self.__signal.data.columns:
-            ax.lines[i].set_label(f'actual series {col}')
+            legend.append(f'raw data: {col}')
             i += 1
         if (self.__signal.data - self.__signal.rest_data).sum().sum() != 0:
             self.__signal.rest_data.plot(ax=ax, **kwargs)
             for col in self.__signal.rest_data.columns:
-                ax.lines[i].set_label(f'transformed series {col}')
+                legend.append(f'transformed data: {col}')
                 i += 1
+        plt.legend(legend)
+        plt.title(f'Operations to transform data: {list(self.__signal.operation_data.dict_op.keys())}',
+                  fontdict={'fontsize': 10})
         plt.show()
 
     def plot_smoothing(self, resample_size: str = 'A', window_size: int = 12) -> None:
