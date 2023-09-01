@@ -37,7 +37,7 @@ To start using the package, import you data as a pandas dataframe with a tempora
 ```python
 import pandas as pd
 
-from darts.datasets import AirPassengersDataset, AustralianTourismDataset
+from darts.datasets import AirPassengersDataset
 from darts.models import AutoARIMA, Prophet, ExponentialSmoothing, XGBModel, VARIMA
 from darts.utils.utils import ModelMode, SeasonalityMode
 
@@ -168,3 +168,4 @@ signal.forecast("AggregatedModel", 100)
 <img src="examples/ex_fc_ag.png" alt="drawing" width="700"/>
 
 ### Author
+<img src="logoEurobiosMewsLabs.png" alt="drawing" width="400"/>
