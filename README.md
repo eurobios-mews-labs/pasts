@@ -27,6 +27,32 @@ python3 -m pip install git+https://gitlab.eurobios.com/escb/series-temporelles.g
 
 ```
 
+
+#### Building the documentation
+
+First, make sure you have sphinx and the Readthedocs theme installed.
+
+If you use pip, open a terminal and enter the following commands:
+```shell script
+pip install sphinx
+pip install sphinx_rtd_theme
+```
+
+If you use conda, open an Anaconda Powershell Prompt and enter the following commands:
+```shell script
+conda install sphinx
+conda install sphinx_rtd_theme
+```
+
+Then, in the same terminal or anaconda prompt, build the doc with:
+```shell script
+cd doc
+make html
+```
+
+The documentation can then be accessed from `doc/_build/html/index.html`.
+
+
 ## Usage and example
 You can find examples for the `Signal` class for univariate and multivariate series here: https://gitlab.eurobios.com/escb/series-temporelles/-/blob/aggregated_model/examples/ex_model.py?ref_type=heads
 
