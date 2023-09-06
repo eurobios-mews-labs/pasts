@@ -191,7 +191,7 @@ class AggregatedModel(ModelAbstract):
         for ref in df_ag.columns:
             res = [0 for _ in df_ag.index]
             for model in dict_models.keys():
-                res += self.signal.models[model]['predictions'][ref].values() * weights.loc[ref, model]
+                res += self.signal.models[model]['predictions'].pd_dataframe()[ref].values * weights.loc[ref, model]
             df_ag[ref] = res
         return {'predictions': TimeSeries.from_dataframe(df_ag), 'weights': weights, 'models': dict_models,
                 'scores': {}}
@@ -210,7 +210,7 @@ class AggregatedModel(ModelAbstract):
         for ref in df_ag.columns:
             res = [0 for _ in df_ag.index]
             for model in dict_models.keys():
-                res += self.signal.models[model]['forecast'][ref].values() * self.signal.models['AggregatedModel'][
+                res += self.signal.models[model]['forecast'].pd_dataframe()[ref].values * self.signal.models['AggregatedModel'][
                     'weights'].loc[ref, model]
             df_ag[ref] = res
 

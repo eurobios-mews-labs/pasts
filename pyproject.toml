@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "seriestemporelles"
+name = "pasts"
 version = "0.0.1"
 description = "unified collections of models to analyze a time series"
-authors = ["Rawya Zreik <rzreik@eurobios.com>"]
+authors = ["Rawya Zreik <rzreik@eurobios.com>", "Juliette Veillon <juliette.veillon@eurobios.com>"]
 readme = "README.md"
 packages = [{include = "pasts", from = "src"}]
 keywords = ["times series", "forcasting", "analysis", "machine learning"]
@@ -16,8 +16,9 @@ secondary = true
 [tool.poetry.dependencies]
 python = "^3.8"
 pandas="^1"
-darts= "0.23.1"
-statsmodels = "0.13.5"
+numpy=">=1.17.3, <1.25.0"
+darts= "0.25"
+statsmodels = "0.14"
 
 
 [build-system]

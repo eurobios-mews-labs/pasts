@@ -71,8 +71,10 @@ class Visualization:
                 legend.append(f'transformed data: {col}')
                 i += 1
         plt.legend(legend)
-        plt.title(f'Operations to transform data: {list(self.__signal.operation_data.dict_op.keys())}',
-                  fontdict={'fontsize': 10})
+        if self.__signal.operation_train is not None:
+            if self.__signal.operation_train.dict_op:
+                plt.title(f'Operations to transform data: {list(self.__signal.operation_data.dict_op.keys())}',
+                          fontdict={'fontsize': 10})
         plt.show()
 
     def plot_smoothing(self, resample_size: str = 'A', window_size: int = 12) -> None:

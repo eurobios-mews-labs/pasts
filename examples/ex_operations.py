@@ -12,4 +12,5 @@ if __name__ == '__main__':
     det.plot(ax=ax)
     ret = op.transform(det)
     ret.plot(ax=ax)
+    plt.legend(['transformed data', 'back-transformed data'])
     plt.show()

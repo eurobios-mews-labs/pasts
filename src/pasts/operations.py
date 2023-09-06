@@ -42,9 +42,9 @@ class Trend:
     fit(X, y):
         Extracts trend from passed X series.
     _from_i_to_vector(i):
-        Computes past or future float index of length |i|.
+        Computes past or future float index.
     _from_i_to_time_index(i):
-        Computes past or future time index of length |i|.
+        Computes past or future time index.
     _t(i):
         Creates a matrix to be used when transforming a series.
     _intercept_to_frame(shape):
@@ -94,7 +94,7 @@ class Trend:
         i : int
             Size of output index.
             If positive, extension of attribute time_index.
-            If negative, i last values of time_index.
+            If negative, last values of time_index.
 
         Returns
         -------
@@ -114,7 +114,7 @@ class Trend:
         i : int
             Size of output index.
             If positive, extension of attribute time_index.
-            If negative, i last values of time_index.
+            If negative, last values of time_index.
 
         Returns
         -------
