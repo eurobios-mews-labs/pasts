@@ -3,8 +3,6 @@ from darts.models import ExponentialSmoothing, AutoARIMA
 from darts.utils.utils import ModelMode, SeasonalityMode
 import math
 
-from matplotlib import pyplot as plt
-
 from pasts import Visualization, Signal
 
 
