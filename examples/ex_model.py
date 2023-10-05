@@ -39,10 +39,10 @@ if __name__ == '__main__':
     signal.apply_model(Prophet())
 
     # If trend and seasonality have been removed, cannot perform this gridsearch
-    # param_grid = {'trend': [ModelMode.ADDITIVE, ModelMode.MULTIPLICATIVE, ModelMode.NONE],
-    #              'seasonal': [SeasonalityMode.ADDITIVE, SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.NONE],
-    #              }
-    # signal.apply_model(ExponentialSmoothing(), gridsearch=True, parameters=param_grid)
+    param_grid = {'trend': [ModelMode.ADDITIVE, ModelMode.MULTIPLICATIVE, ModelMode.NONE],
+                 'seasonal': [SeasonalityMode.ADDITIVE, SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.NONE],
+                 }
+    signal.apply_model(ExponentialSmoothing(), gridsearch=True, parameters=param_grid)
 
     # --- Compute scores ---
     signal.compute_scores()

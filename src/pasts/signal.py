@@ -15,7 +15,6 @@ from typing import Union
 
 import pandas as pd
 from darts import TimeSeries
-from scipy import stats
 
 from pasts.model import Model, AggregatedModel
 from pasts.operations import Operation
@@ -208,31 +207,12 @@ class Signal(ABC):
         """
         call_validation = Validation(self.data)
         call_validation.split_cv(timestamp, n_splits_cv)
+        if call_validation.train_data.shape[0] < 2:
+            raise ValueError("Train set is empty or too small.")
         self.__train_data = call_validation.train_data
         self.__test_data = call_validation.test_data
         self.__cv_tseries = call_validation.cv_tseries
         self.__rest_train_data = self.train_data.copy()
-
-    def filter_outliers(self, threshold: int = 5) -> None:
-        """
-        Deletes outliers in transformed data and train data.
-
-        Parameters
-        ----------
-        threshold: int
-            z-score above which values are deleted.
-
-        Returns
-        -------
-        None
-        """
-        z_scores = stats.zscore(self.rest_data)
-        outliers_mask = (z_scores > threshold) | (z_scores < -threshold)
-        self.__rest_data = self.rest_data.where(~outliers_mask, other=pd.NA)
-
-        z_scores = stats.zscore(self.rest_train_data)
-        outliers_mask = (z_scores > threshold) | (z_scores < -threshold)
-        self.__rest_train_data = self.rest_train_data.where(~outliers_mask, other=pd.NA)
 
     def apply_operations(self, list_op: list[str]) -> None:
         """
@@ -248,6 +228,8 @@ class Signal(ABC):
         -------
         None
         """
+        if self.train_data is None:
+            raise Exception('No train data found. Perform split before applying operations.')
         self.__operation_data = Operation(self.data)
         self.__rest_data = self.operation_data.fit_transform(list_op)
         if self.train_data is not None:

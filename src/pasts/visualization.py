@@ -77,18 +77,6 @@ class Visualization:
                           fontdict={'fontsize': 10})
         plt.show()
 
-    def plot_smoothing(self, resample_size: str = 'A', window_size: int = 12) -> None:
-        """
-         :param resample_size: calendar for resample, 'A' : year, 'D': Day, 'M': Month
-         :type window_size: int : the size of window to rolling
-         """
-        resample_yr = self.__signal.data.resample(resample_size).mean()
-        roll_yr = self.__signal.data.rolling(window_size).mean()
-        ax = self.__signal.data.plot(alpha=0.5, style='-')  # store axis (ax) for latter plots
-        resample_yr.plot(style=':', ax=ax)
-        roll_yr.plot(style='--', ax=ax)
-        ax.legend(['Resample at year frequency', 'Rolling average (smooth), window size=%s' % window_size])
-
     def acf_plot(self) -> None:
         """
         Plots autocorrelation (only for univariate series)

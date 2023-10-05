@@ -194,7 +194,7 @@ class AggregatedModel(ModelAbstract):
                 res += self.signal.models[model]['predictions'].pd_dataframe()[ref].values * weights.loc[ref, model]
             df_ag[ref] = res
         return {'predictions': TimeSeries.from_dataframe(df_ag), 'weights': weights, 'models': dict_models,
-                'scores': {}}
+                'scores': {'unit_wise': {}, 'time_wise': {}}}
 
     def compute_final_estimator(self) -> TimeSeries:
         """
