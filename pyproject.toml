@@ -13,14 +13,6 @@ url = "https://gitlab.eurobios.com"
 default = false
 secondary = true
 
-[tool.poetry.dependencies]
-python = "^3.8"
-pandas="^1"
-numpy=">=1.17.3, <1.25.0"
-darts= "0.25"
-statsmodels = "0.14"
-
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
