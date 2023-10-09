@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "pasts"
+version = "0.0.1"
+description = "unified collections of models to analyze a time series"
+authors = ["Rawya Zreik <rzreik@eurobios.com>", "Juliette Veillon <juliette.veillon@eurobios.com>"]
+readme = "README.md"
+packages = [{include = "pasts", from = "src"}]
+keywords = ["times series", "forcasting", "analysis", "machine learning"]
+
+[[tool.poetry.source]]
+name = "gitlab"
+url = "https://gitlab.eurobios.com"
+default = false
+secondary = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

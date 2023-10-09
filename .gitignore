@@ -1,0 +1,5 @@
+/.csv
+*__pycache__*
+*.lock
+readme_old.md
+/doc/_build/
