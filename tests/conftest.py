@@ -1,7 +1,6 @@
 import pandas as pd
 from darts.datasets import AirPassengersDataset, AustralianTourismDataset
 from pytest import fixture
-from pasts.signal import Signal
 
 
 @fixture(scope="module")

@@ -54,7 +54,7 @@ class Visualization:
         """
         self.__signal = signal
 
-    def plot_signal(self, **kwargs) -> None:
+    def plot_signal(self, display=True, **kwargs) -> None:
         """
         Plots raw data and transformed data if operations have been applied.
         """
@@ -75,7 +75,11 @@ class Visualization:
             if self.__signal.operation_train.dict_op:
                 plt.title(f'Operations to transform data: {list(self.__signal.operation_data.dict_op.keys())}',
                           fontdict={'fontsize': 10})
-        plt.show()
+
+        if display is True:
+            plt.show()
+        else:
+            plt.close()
 
     def acf_plot(self) -> None:
         """
@@ -85,7 +89,7 @@ class Visualization:
             raise Exception('Can only plot acf for univariate series')
         autocorrelation_plot(self.__signal.data)
 
-    def show_predictions(self) -> None:
+    def show_predictions(self, display=True) -> None:
         """
         Plots raw data and predicted values on same graph.
         """
@@ -106,9 +110,12 @@ class Visualization:
         ax.legend(labels)
         plt.xlabel('time')
         plt.ylabel('values')
-        plt.show()
+        if display is True:
+            plt.show()
+        else:
+            plt.close()
 
-    def show_forecast(self) -> None:
+    def show_forecast(self, display=True) -> None:
         """
         Plots raw data and forecasted values (for future dates) on same graph.
         """
@@ -132,4 +139,7 @@ class Visualization:
         ax.legend(labels)
         plt.xlabel('time')
         plt.ylabel('values')
-        plt.show()
+        if display is True:
+            plt.show()
+        else:
+            plt.close()

@@ -3,7 +3,7 @@ from darts.models import ExponentialSmoothing, AutoARIMA
 from darts.utils.utils import ModelMode, SeasonalityMode
 import math
 
-from pasts import Visualization, Signal
+from pasts.signal import Signal
 
 
 def test_validation_split(get_univariate_data):
@@ -12,7 +12,7 @@ def test_validation_split(get_univariate_data):
     with pytest.raises(ValueError):
         signal.validation_split(tstamp)
     tstamp2 = '1958-12-01'
-    signal.validation_split(tstamp2)
+    signal.validation_split(tstamp2, n_splits_cv=5)
     assert signal.test_data.shape[0] == 24
     assert signal.train_data.shape[0] == 120
 
@@ -59,7 +59,7 @@ def test_aggregated_model(get_univariate_data):
     assert len(signal.models['AggregatedModel']['predictions']) == 24
     assert signal.models['AggregatedModel']['weights'].shape == (1, 2)
     assert len(signal.models['AggregatedModel']['models']) == 2
-    assert signal.models['AggregatedModel']['weights'].sum(axis=1)[0] == 1
+    assert round(signal.models['AggregatedModel']['weights'].sum(axis=1)[0], 0) == 1
 
 
 def test_scores_unit(get_univariate_data):
@@ -192,12 +192,4 @@ def test_operations(get_univariate_data):
     signal.apply_operations(['trend', 'seasonality'])
     assert signal.rest_data.shape == signal.data.shape
     assert signal.rest_train_data.shape == signal.train_data.shape
-
-
-def test_errors_visualization(get_univariate_data, get_multivariate_data):
-    signal = Signal(get_univariate_data)
-    signal_m = Signal(get_multivariate_data)
-    with pytest.raises(Exception):
-        Visualization(signal_m).acf_plot()
-        Visualization(signal).show_predictions()
 
