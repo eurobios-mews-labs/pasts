@@ -1,4 +1,4 @@
-# Toolbox for Time Series
+# Python AnalySis for Time Series
 
 This package aims to structure the way time series analysis and forecasting is done. 
 
