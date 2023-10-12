@@ -23,7 +23,7 @@ and analysis methods for time series in one unified library.
 #### Installation 
 The package can be installed by :
 ```bash
-python3 -m pip install git+https://gitlab.eurobios.com/escb/series-temporelles.git@aggregated_model
+python3 -m pip install git+https://github.com/eurobios-mews-labs/pasts
 
 ```
 
@@ -54,9 +54,9 @@ The documentation can then be accessed from `doc/_build/html/index.html`.
 
 
 ## Usage and example
-You can find examples for the `Signal` class for univariate and multivariate series here: https://gitlab.eurobios.com/escb/series-temporelles/-/blob/aggregated_model/examples/ex_model.py?ref_type=heads
+You can find examples for the `Signal` class for univariate and multivariate series here: `examples/ex_model.py`
 
-The `Operation` class can be used on its own. Find an example here: https://gitlab.eurobios.com/escb/series-temporelles/-/blob/aggregated_model/examples/ex_operations.py?ref_type=heads
+The `Operation` class can be used on its own. Find an example here: `examples/ex_operations.py`
 
 ### Start project
 To start using the package, import you data as a pandas dataframe with a temporal index and use the `Signal` class.
