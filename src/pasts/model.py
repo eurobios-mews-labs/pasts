@@ -9,6 +9,7 @@
 # See the License for the specific language governing permissions and limitations under the License.
 
 from abc import ABC, abstractmethod
+
 from pandas import MultiIndex
 
 import pandas as pd
@@ -44,11 +45,11 @@ class ModelAbstract(ABC):
         self.signal = signal
 
     @abstractmethod
-    def apply(self):
+    def apply(self, model, gridsearch, parameters):
         pass
 
     @abstractmethod
-    def compute_final_estimator(self):
+    def compute_final_estimator(self, model_name: str):
         pass
 
 
@@ -65,7 +66,7 @@ class Model(ModelAbstract):
         """
         super().__init__(signal)
 
-    def apply(self, model, gridsearch: bool = False, parameters: dict = None) -> dict:
+    def apply(self, model: object, gridsearch: bool = False, parameters: dict = None) -> dict:
         """
         Applies given model on test set.
         If gridsearch is True and parameters are given, performs a gridsearch and saves the best parameters.
@@ -149,16 +150,18 @@ class AggregatedModel(ModelAbstract):
         """
         super().__init__(signal)
 
-    def apply(self, dict_models: dict) -> dict:
+    def apply(self, model: dict, gridsearch=None, parameters=None) -> dict:
         """
         Aggregates given models according to their performance on test set.
         Requires the models to have been applied on test set.
 
         Parameters
         ----------
-        dict_models : dict
+        model : dict
                keys: model names
                values: model instances
+        gridsearch : Unused, added for compatibility
+        parameters : Unused, added for compatibility
 
         Returns
         -------
@@ -168,37 +171,41 @@ class AggregatedModel(ModelAbstract):
         'scores' : will be filled when scores are computed}
         """
         dict_pred = {model: self.signal.models[model][
-            'predictions'].pd_dataframe().copy() for model in dict_models.keys()}
+            'predictions'].pd_dataframe().copy() for model in model.keys()}
         df_test = self.signal.test_data.copy()
         weights = pd.DataFrame(index=MultiIndex.from_product([self.signal.test_data.index,
                                                              self.signal.test_data.columns], names=['Date', 'Unité']),
-                               columns=list(dict_models.keys()))
+                               columns=list(model.keys()))
         weights.drop(self.signal.test_data.index[0], level=0, inplace=True)
-        for model in weights.columns:
-            df_pred = dict_pred[model]
+        for model_ in weights.columns:
+            df_pred = dict_pred[model_]
             for date in weights.index.get_level_values(0).unique():
                 df_pred_temp = df_pred[df_pred.index < date]
                 df_test_temp = df_test[df_test.index < date]
                 for ref in weights.index.get_level_values(1).unique():
-                    weights.loc[(date, ref)][model] = 1 / mean_squared_error(df_test_temp[ref], df_pred_temp[ref],
+                    weights.loc[(date, ref)][model_] = 1 / mean_squared_error(df_test_temp[ref], df_pred_temp[ref],
                                                                              squared=False)
         for i in weights.index:
             weights.loc[i] = weights.loc[i] / (weights.loc[i].sum())
-        weights = weights.groupby('Unité')[list(dict_models.keys())].mean()
+        weights = weights.groupby('Unité')[list(model.keys())].mean()
 
-        df_ag = pd.DataFrame(index=self.signal.models[list(dict_models.keys())[0]]['predictions'].time_index,
-                             columns=self.signal.models[list(dict_models.keys())[0]]['predictions'].columns)
+        df_ag = pd.DataFrame(index=self.signal.models[list(model.keys())[0]]['predictions'].time_index,
+                             columns=self.signal.models[list(model.keys())[0]]['predictions'].columns)
         for ref in df_ag.columns:
             res = [0 for _ in df_ag.index]
-            for model in dict_models.keys():
-                res += self.signal.models[model]['predictions'].pd_dataframe()[ref].values * weights.loc[ref, model]
+            for model_ in model.keys():
+                res += self.signal.models[model_]['predictions'].pd_dataframe()[ref].values * weights.loc[ref, model_]
             df_ag[ref] = res
-        return {'predictions': TimeSeries.from_dataframe(df_ag), 'weights': weights, 'models': dict_models,
+        return {'predictions': TimeSeries.from_dataframe(df_ag), 'weights': weights, 'models': model,
                 'scores': {'unit_wise': {}, 'time_wise': {}}}
 
-    def compute_final_estimator(self) -> TimeSeries:
+    def compute_final_estimator(self, model_name='') -> TimeSeries:
         """
         Aggregates all computed forecasts.
+
+        Parameters
+        ----------
+        model_name : Unused, added for compatibility
 
         Returns
         -------

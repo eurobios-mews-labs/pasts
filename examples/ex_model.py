@@ -1,7 +1,9 @@
+import joblib
 import pandas as pd
+from darts import TimeSeries
 
 from darts.datasets import AirPassengersDataset, AustralianTourismDataset
-from darts.models import AutoARIMA, Prophet, ExponentialSmoothing, XGBModel, VARIMA
+from darts.models import AutoARIMA, ExponentialSmoothing, XGBModel, VARIMA
 from darts.utils.utils import ModelMode, SeasonalityMode
 
 from pasts.signal import Signal
@@ -33,15 +35,15 @@ if __name__ == '__main__':
     signal.apply_operations(['trend', 'seasonality'])
     Visualization(signal).plot_signal()
 
-    signal.apply_model(ExponentialSmoothing())
+    signal.apply_model(ExponentialSmoothing(), save_model=True)
+    signal.models['ExponentialSmoothing'] = joblib.load('ExponentialSmoothing_train_jlib')
 
     signal.apply_model(AutoARIMA())
-    signal.apply_model(Prophet())
 
     # If trend and seasonality have been removed, cannot perform this gridsearch
     param_grid = {'trend': [ModelMode.ADDITIVE, ModelMode.MULTIPLICATIVE, ModelMode.NONE],
-                 'seasonal': [SeasonalityMode.ADDITIVE, SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.NONE],
-                 }
+                  'seasonal': [SeasonalityMode.ADDITIVE, SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.NONE],
+                  }
     signal.apply_model(ExponentialSmoothing(), gridsearch=True, parameters=param_grid)
 
     # --- Compute scores ---
@@ -52,7 +54,7 @@ if __name__ == '__main__':
     Visualization(signal).show_predictions()
 
     # --- Aggregated Model ---
-    signal.apply_aggregated_model([AutoARIMA(), Prophet()])
+    signal.apply_aggregated_model([AutoARIMA(), ExponentialSmoothing()])
     signal.compute_scores(axis=1)
     Visualization(signal).show_predictions()
 
@@ -107,3 +109,46 @@ if __name__ == '__main__':
 
     # --- Visualize forecasts ---
     Visualization(signal_m).show_forecast()
+
+
+    # ---- ESSAI INTERVALLE DE CONFIANCE ----
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    variance_arima = np.var(signal.models['AutoARIMA']['predictions'].values())
+    variance_exp = np.var(signal.models['ExponentialSmoothing']['predictions'].values())
+    std_arima = np.std(signal.models['AutoARIMA']['predictions'].values())
+    std_exp = np.std(signal.models['ExponentialSmoothing']['predictions'].values())
+    variance_agregee = (signal.models['AggregatedModel']['weights']['AutoARIMA'].values[0] ** 2 * variance_arima) + (
+                signal.models['AggregatedModel']['weights']['ExponentialSmoothing'].values[0] ** 2 * variance_exp)
+    std_agregee = np.sqrt(variance_agregee)
+    alpha = 0.05
+    z_critical = 1.96
+    margin_of_error = z_critical * std_agregee
+    lower_bound = signal.models['AggregatedModel']['predictions'] - margin_of_error
+    upper_bound = signal.models['AggregatedModel']['predictions'] + margin_of_error
+
+    # Créez le graphique
+    plt.figure(figsize=(10, 6))
+    pred = pd.DataFrame(signal.models['AggregatedModel']['predictions'].values())
+    pred.columns = signal.models['AggregatedModel']['predictions'].columns
+    pred.index = signal.models['AggregatedModel']['predictions'].time_index
+    plt.plot(pred)
+    plt.fill_between(lower_bound.time_index, lower_bound.values()[:, 0], upper_bound.values()[:, 0], color='green', alpha=0.6,
+                     label="Intervalle de confiance")
+
+    # Personnalisez le graphique
+    plt.xlabel("Dates")
+    plt.ylabel("Valeurs")
+    plt.title("Prédiction de la série temporelle avec intervalle de confiance")
+    plt.legend()
+
+    # Affichez le graphique
+    plt.show()
+
+
+
+
+
+

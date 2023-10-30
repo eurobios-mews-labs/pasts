@@ -12,6 +12,7 @@ import copy
 import warnings
 from abc import ABC
 from typing import Union
+import joblib
 
 import pandas as pd
 from darts import TimeSeries
@@ -236,7 +237,11 @@ class Signal(ABC):
             self.__operation_train = Operation(self.train_data)
             self.__rest_train_data = self.operation_train.fit_transform(list_op)
 
-    def apply_model(self, model, gridsearch=False, parameters=None) -> None:
+    def apply_model(self,
+                    model: object,
+                    gridsearch: bool = False,
+                    parameters: dict = None,
+                    save_model: bool = False) -> None:
         """
         Applies statistical, machine learning of deep learning model to the series.
 
@@ -248,14 +253,18 @@ class Signal(ABC):
                 Instance of a model from darts. Will be refitted even if it has already been.
         gridsearch : bool, optional
                 Whether to perform a gridsearch (default is False)
-        parameters : pd.Dataframe, optional
+        parameters : dict, optional
                 Parameters to test if a gridsearch is performed (default is None)
+        save_model : bool, optional
+                Whether to save the model in a file (default is False).
 
         Returns
         -------
         None
         """
         self.models[model.__class__.__name__] = Model(self).apply(copy.deepcopy(model), gridsearch, parameters)
+        if save_model:
+            joblib.dump(self.models[model.__class__.__name__], f'{model.__class__.__name__}_train_jlib')
 
     def compute_scores(self, list_metrics: list[str] = None, axis=1) -> None:
         """
@@ -287,7 +296,7 @@ class Signal(ABC):
             self.models[model]['scores'][score_type] = call_metric.compute_scores(model, axis)
         self.performance_models[score_type] = call_metric.scores_comparison(axis)
 
-    def apply_aggregated_model(self, list_models: list, refit=False) -> None:
+    def apply_aggregated_model(self, list_models: list[object], refit: bool = False, save_model: bool = False) -> None:
         """
         Aggregates a given list of models according to their performance on test data.
 
@@ -300,6 +309,8 @@ class Signal(ABC):
         refit : bool, optional
                 Whether to refit estimators even if they were previously fitted (default is False).
                 Ignored for estimators not previously fitted.
+        save_model : bool, optional
+                Whether to save the model in a file (default is False).
 
         Returns
         -------
@@ -315,8 +326,10 @@ class Signal(ABC):
                     warnings.warn(f'{model_name}  has not yet been fitted. Fitting {model_name}...', UserWarning)
                     self.apply_model(model)
         self.models['AggregatedModel'] = AggregatedModel(self).apply(dict_models)
+        if save_model:
+            joblib.dump(self.models['AggregatedModel'], 'AggregatedModel_train_jlib')
 
-    def forecast(self, model_name: str, horizon: int) -> None:
+    def forecast(self, model_name: str, horizon: int, save_model: bool = False) -> None:
         """
         Generates forecasts for future dates.
 
@@ -329,6 +342,8 @@ class Signal(ABC):
                 aggregation.
         horizon : int
                 Horizon of prediction.
+        save_model : bool, optional
+                Whether to save the model in a file (default is False).
 
         Returns
         -------
@@ -344,8 +359,13 @@ class Signal(ABC):
                     if self.operation_data.dict_op:
                         self.models[model]['forecast'] = TimeSeries.from_dataframe(
                             self.operation_data.transform(self.models[model]['forecast'].pd_dataframe()))
+                if save_model:
+                    joblib.dump(self.models[model], f'{model.__class__.__name__}_final_jlib')
 
             self.models['AggregatedModel']['forecast'] = AggregatedModel(self).compute_final_estimator()
+            if save_model:
+                joblib.dump(self.models['AggregatedModel'], 'AggregatedModel_final_jlib')
+
         else:
             if model_name not in self.models.keys():
                 raise Exception(f'{model_name} has not been trained.')
@@ -355,3 +375,5 @@ class Signal(ABC):
                 if self.operation_data.dict_op:
                     self.models[model_name]['forecast'] = TimeSeries.from_dataframe(
                         self.operation_data.transform(self.models[model_name]['forecast'].pd_dataframe()))
+            if save_model:
+                joblib.dump(self.models[model_name], f'{model_name}_final_jlib')
