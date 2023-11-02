@@ -10,6 +10,7 @@
 
 from abc import ABC, abstractmethod
 
+import numpy as np
 from pandas import MultiIndex
 
 import pandas as pd
@@ -185,19 +186,30 @@ class AggregatedModel(ModelAbstract):
                 for ref in weights.index.get_level_values(1).unique():
                     weights.loc[(date, ref)][model_] = 1 / mean_squared_error(df_test_temp[ref], df_pred_temp[ref],
                                                                              squared=False)
+        perf = 1 / weights
+        std = {}
+        for model_ in perf.columns:
+            std[model_] = np.std(perf[model_])
         for i in weights.index:
             weights.loc[i] = weights.loc[i] / (weights.loc[i].sum())
         weights = weights.groupby('Unité')[list(model.keys())].mean()
 
         df_ag = pd.DataFrame(index=self.signal.models[list(model.keys())[0]]['predictions'].time_index,
                              columns=self.signal.models[list(model.keys())[0]]['predictions'].columns)
+        conf_itv = df_ag.copy()
         for ref in df_ag.columns:
             res = [0 for _ in df_ag.index]
+            itv_inf = [0 for _ in df_ag.index]
+            itv_sup = [0 for _ in df_ag.index]
             for model_ in model.keys():
                 res += self.signal.models[model_]['predictions'].pd_dataframe()[ref].values * weights.loc[ref, model_]
+                itv_inf += res + (-1.96) * std[model_]
+                itv_sup += res + 1.96 * std[model_]
             df_ag[ref] = res
-        return {'predictions': TimeSeries.from_dataframe(df_ag), 'weights': weights, 'models': model,
-                'scores': {'unit_wise': {}, 'time_wise': {}}}
+
+            conf_itv[ref] = [[itv_inf[i] / len(itv_inf), itv_sup[i] / len(itv_inf)] for i in range(len(itv_inf))]
+        return {'predictions': TimeSeries.from_dataframe(df_ag), 'confidence_interval': conf_itv, 'weights': weights,
+                'models': model, 'scores': {'unit_wise': {}, 'time_wise': {}}}
 
     def compute_final_estimator(self, model_name='') -> TimeSeries:
         """
