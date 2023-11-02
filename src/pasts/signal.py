@@ -13,6 +13,9 @@ import warnings
 from abc import ABC
 from typing import Union
 import joblib
+import os
+import glob
+import re
 
 import pandas as pd
 from darts import TimeSeries
@@ -80,7 +83,6 @@ class Signal(ABC):
                 Dataframe of time series with time as index and one or several entities as columns.
                 Index must be of type DatetimeIndex.
         """
-        self.__data_index = data.index
         self.__data = data
         self.__rest_data = data.copy()
         self.__operation_train = None
@@ -98,17 +100,6 @@ class Signal(ABC):
     def data(self):
         """Input time series as a pandas dataframe"""
         return self.__data
-
-    @property
-    def data_index(self):
-        """Input time series as a pandas dataframe"""
-        return self.__data_index
-
-    @data_index.setter
-    def data_index(self, index):
-        if not (index.dtype == 'datetime64[ns]'):
-            raise Exception("Index must a Timestamp")
-        self.__data_index = index
 
     @property
     def rest_data(self):
@@ -257,6 +248,7 @@ class Signal(ABC):
                 Parameters to test if a gridsearch is performed (default is None)
         save_model : bool, optional
                 Whether to save the model in a file (default is False).
+                When True, also saves data, train and test set, and transformed data (if it exists).
 
         Returns
         -------
@@ -265,6 +257,10 @@ class Signal(ABC):
         self.models[model.__class__.__name__] = Model(self).apply(copy.deepcopy(model), gridsearch, parameters)
         if save_model:
             joblib.dump(self.models[model.__class__.__name__], f'{model.__class__.__name__}_train_jlib')
+            joblib.dump(self.rest_data, 'rest_data_jlib')
+            joblib.dump(self.rest_train_data, 'rest_train_data_jlib')
+            joblib.dump(self.test_data, 'test_data_jlib')
+            joblib.dump(self.train_data, 'train_data_jlib')
 
     def compute_scores(self, list_metrics: list[str] = None, axis=1) -> None:
         """
@@ -311,6 +307,7 @@ class Signal(ABC):
                 Ignored for estimators not previously fitted.
         save_model : bool, optional
                 Whether to save the model in a file (default is False).
+                When True, also saves data, train and test set, and transformed data (if it exists).
 
         Returns
         -------
@@ -325,9 +322,15 @@ class Signal(ABC):
                 if model_name not in self.models.keys():
                     warnings.warn(f'{model_name}  has not yet been fitted. Fitting {model_name}...', UserWarning)
                     self.apply_model(model)
+                    if save_model:
+                        joblib.dump(self.models[model_name], f'{model_name}_train_jlib')
         self.models['AggregatedModel'] = AggregatedModel(self).apply(dict_models)
         if save_model:
             joblib.dump(self.models['AggregatedModel'], 'AggregatedModel_train_jlib')
+            joblib.dump(self.rest_data, 'rest_data_jlib')
+            joblib.dump(self.rest_train_data, 'rest_train_data_jlib')
+            joblib.dump(self.test_data, 'test_data_jlib')
+            joblib.dump(self.train_data, 'train_data_jlib')
 
     def forecast(self, model_name: str, horizon: int, save_model: bool = False) -> None:
         """
@@ -344,6 +347,7 @@ class Signal(ABC):
                 Horizon of prediction.
         save_model : bool, optional
                 Whether to save the model in a file (default is False).
+                When True, also saves data, train and test set, and transformed data (if it exists).
 
         Returns
         -------
@@ -353,23 +357,31 @@ class Signal(ABC):
             if 'AggregatedModel' not in self.models.keys():
                 raise Exception('Aggregated Model has not been trained. Use method apply_aggregated_model first.')
             for model in self.models['AggregatedModel']['models'].keys():
-                self.models[model]['final_estimator'] = Model(self).compute_final_estimator(model)
+                if 'final_estimator' not in self.models[model].keys():
+                    print(f"fitting model {model} on whole data")
+                    self.models[model]['final_estimator'] = Model(self).compute_final_estimator(model)
                 self.models[model]['forecast'] = self.models[model]['final_estimator'].predict(horizon)
                 if self.operation_data is not None:
                     if self.operation_data.dict_op:
                         self.models[model]['forecast'] = TimeSeries.from_dataframe(
                             self.operation_data.transform(self.models[model]['forecast'].pd_dataframe()))
                 if save_model:
-                    joblib.dump(self.models[model], f'{model.__class__.__name__}_final_jlib')
+                    joblib.dump(self.models[model], f'{model}_final_jlib')
 
             self.models['AggregatedModel']['forecast'] = AggregatedModel(self).compute_final_estimator()
             if save_model:
                 joblib.dump(self.models['AggregatedModel'], 'AggregatedModel_final_jlib')
+                joblib.dump(self.rest_data, 'rest_data_jlib')
+                joblib.dump(self.rest_train_data, 'rest_train_data_jlib')
+                joblib.dump(self.test_data, 'test_data_jlib')
+                joblib.dump(self.train_data, 'train_data_jlib')
 
         else:
             if model_name not in self.models.keys():
                 raise Exception(f'{model_name} has not been trained.')
-            self.models[model_name]['final_estimator'] = Model(self).compute_final_estimator(model_name)
+            if 'final_estimator' not in self.models[model_name].keys():
+                print(f"Fitting model {model_name} on whole data")
+                self.models[model_name]['final_estimator'] = Model(self).compute_final_estimator(model_name)
             self.models[model_name]['forecast'] = self.models[model_name]['final_estimator'].predict(horizon)
             if self.operation_data is not None:
                 if self.operation_data.dict_op:
@@ -377,3 +389,46 @@ class Signal(ABC):
                         self.operation_data.transform(self.models[model_name]['forecast'].pd_dataframe()))
             if save_model:
                 joblib.dump(self.models[model_name], f'{model_name}_final_jlib')
+                joblib.dump(self.rest_data, 'rest_data_jlib')
+                joblib.dump(self.rest_train_data, 'rest_train_data_jlib')
+                joblib.dump(self.test_data, 'test_data_jlib')
+                joblib.dump(self.train_data, 'train_data_jlib')
+
+    def get_saved_models(self) -> None:
+        """
+        Gets previously fitted models saved in joblib files and saves them in attribute models.
+        """
+        path = os.getcwd()
+        mod = "*jlib"
+        files = glob.glob(os.path.join(path, mod))
+        if not files:
+            warnings.warn("No saved models were found.")
+        else:
+            for file in files:
+                filename = os.path.basename(file)
+                match_data = re.search(r'(.+)_data_jlib', filename)
+                if match_data:
+                    name = match_data.group(1)
+                    if name == 'rest':
+                        self.__rest_data = joblib.load(file)
+                    elif name == 'rest_train':
+                        self.__rest_train_data = joblib.load(file)
+                    elif name == 'test':
+                        self.__test_data = joblib.load(file)
+                    elif name == 'train':
+                        self.__train_data = joblib.load(file)
+                else:
+                    match_final = re.search(r'(.+)_final_jlib', filename)
+                    if match_final:
+                        name = match_final.group(1)
+                        self.models[name] = joblib.load(file)
+                    else:
+                        match_train = re.search(r'(.+)_train_jlib', filename)
+                        if match_train:
+                            name = match_train.group(1)
+                            if name not in self.models.keys():
+                                self.models[name] = joblib.load(file)
+                            elif 'forecast' not in self.models[name].keys():
+                                self.models[name] = joblib.load(file)
+                        else:
+                            print(f"File {filename} does not correspond to a saved model.")

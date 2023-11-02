@@ -1,6 +1,4 @@
-import joblib
 import pandas as pd
-from darts import TimeSeries
 
 from darts.datasets import AirPassengersDataset, AustralianTourismDataset
 from darts.models import AutoARIMA, ExponentialSmoothing, XGBModel, VARIMA
@@ -36,9 +34,8 @@ if __name__ == '__main__':
     Visualization(signal).plot_signal()
 
     signal.apply_model(ExponentialSmoothing(), save_model=True)
-    signal.models['ExponentialSmoothing'] = joblib.load('ExponentialSmoothing_train_jlib')
 
-    signal.apply_model(AutoARIMA())
+    signal.apply_model(AutoARIMA(), save_model=True)
 
     # If trend and seasonality have been removed, cannot perform this gridsearch
     param_grid = {'trend': [ModelMode.ADDITIVE, ModelMode.MULTIPLICATIVE, ModelMode.NONE],
@@ -54,15 +51,14 @@ if __name__ == '__main__':
     Visualization(signal).show_predictions()
 
     # --- Aggregated Model ---
-    signal.apply_aggregated_model([AutoARIMA(), ExponentialSmoothing()])
+    signal.apply_aggregated_model([AutoARIMA(), ExponentialSmoothing()], save_model=True)
     signal.compute_scores(axis=1)
     Visualization(signal).show_predictions()
 
     # --- Forecast ---
-    signal.forecast("Prophet", 100)
-    signal.forecast("AggregatedModel", 100)
-    signal.forecast("AutoARIMA", 100)
-    signal.forecast("ExponentialSmoothing", 100)
+    signal.forecast("AggregatedModel", 100, save_model=True)
+    signal.forecast("AutoARIMA", 100, save_model=True)
+    signal.forecast("ExponentialSmoothing", 100, save_model=True)
 
     # --- Visualize forecasts ---
     Visualization(signal).show_forecast()
