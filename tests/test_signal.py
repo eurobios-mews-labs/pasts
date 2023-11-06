@@ -121,7 +121,7 @@ def test_forecast(get_univariate_data):
     for model in signal.models['AggregatedModel']['models'].keys():
         assert len(signal.models[model]) == 6
         assert signal.models[model]['forecast'].n_timesteps == 12
-    assert len(signal.models['AggregatedModel']) == 5
+    assert len(signal.models['AggregatedModel']) == 8
     assert signal.models['AggregatedModel']['forecast'].n_timesteps == 12
     assert signal.models['AggregatedModel']['forecast'].time_index[0] > signal.data.index[-1]
 
