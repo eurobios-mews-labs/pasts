@@ -320,7 +320,7 @@ class Signal(ABC):
         else:
             for model_name, model in dict_models.items():
                 if model_name not in self.models.keys():
-                    warnings.warn(f'{model_name}  has not yet been fitted. Fitting {model_name}...', UserWarning)
+                    print(f'{model_name} has not yet been fitted. Fitting {model_name}...')
                     self.apply_model(model)
                     if save_model:
                         joblib.dump(self.models[model_name], f'{model_name}_train_jlib')
@@ -358,7 +358,7 @@ class Signal(ABC):
                 raise Exception('Aggregated Model has not been trained. Use method apply_aggregated_model first.')
             for model in self.models['AggregatedModel']['models'].keys():
                 if 'final_estimator' not in self.models[model].keys():
-                    print(f"fitting model {model} on whole data")
+                    print(f"Fitting model {model} on whole dataset...")
                     self.models[model]['final_estimator'] = Model(self).compute_final_estimator(model)
                 self.models[model]['forecast'] = self.models[model]['final_estimator'].predict(horizon)
                 if self.operation_data is not None:
@@ -368,7 +368,8 @@ class Signal(ABC):
                 if save_model:
                     joblib.dump(self.models[model], f'{model}_final_jlib')
 
-            self.models['AggregatedModel']['forecast'] = AggregatedModel(self).compute_final_estimator()
+            self.models['AggregatedModel']['forecast'], self.models['AggregatedModel']['forecast_interval'] = \
+                AggregatedModel(self).compute_final_estimator()
             if save_model:
                 joblib.dump(self.models['AggregatedModel'], 'AggregatedModel_final_jlib')
                 joblib.dump(self.rest_data, 'rest_data_jlib')
@@ -380,7 +381,7 @@ class Signal(ABC):
             if model_name not in self.models.keys():
                 raise Exception(f'{model_name} has not been trained.')
             if 'final_estimator' not in self.models[model_name].keys():
-                print(f"Fitting model {model_name} on whole data")
+                print(f"Fitting model {model_name} on whole dataset...")
                 self.models[model_name]['final_estimator'] = Model(self).compute_final_estimator(model_name)
             self.models[model_name]['forecast'] = self.models[model_name]['final_estimator'].predict(horizon)
             if self.operation_data is not None:

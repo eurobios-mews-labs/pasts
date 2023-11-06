@@ -89,7 +89,7 @@ class Visualization:
             raise Exception('Can only plot acf for univariate series')
         autocorrelation_plot(self.__signal.data)
 
-    def show_predictions(self, display=True) -> None:
+    def show_predictions(self, aggregated_only=False, display=True) -> None:
         """
         Plots raw data and predicted values on same graph.
         """
@@ -100,13 +100,30 @@ class Visualization:
 
         labels = ['Actuals_s' + str(i) for i in range(1, n_signals + 1)]
         ax.plot(self.__signal.data, c='gray')
-        for model in self.__signal.models.keys():
+        if aggregated_only:
+            if 'AggregatedModel' not in self.__signal.models.keys():
+                raise Exception('No predictions have been computed with aggregated model')
+            else:
+                to_plot = ['AggregatedModel']
+                for i, unit in enumerate(self.__signal.data.columns):
+                    itv = self.__signal.models['AggregatedModel']['confidence_interval']
+                    bounds = pd.DataFrame(index=self.__signal.models['AggregatedModel']['confidence_interval'].index)
+                    bounds['lower'] = [interval[0] for interval in itv[unit].values]
+                    bounds['upper'] = [interval[1] for interval in itv[unit].values]
+                    ax.plot(bounds, color='green', linestyle='--')
+                    ax.fill_between(bounds.index, bounds['lower'], bounds['upper'], color='green', alpha=0.3)
+                    labels += [f'lower_s{str(i + 1)}', f'upper_s{str(i + 1)}', f'interval_s{str(i + 1)}']
+        else:
+            to_plot = self.__signal.models.keys()
+
+        for model in to_plot:
             pred = pd.DataFrame(self.__signal.models[model]['predictions'].values())
             pred.columns = self.__signal.models[model]['predictions'].columns
             pred.index = self.__signal.models[model]['predictions'].time_index
             ax.plot(pred)
             list_model_label = [model + '_s' + str(i) for i in range(1, n_signals + 1)]
             labels += list_model_label
+
         ax.legend(labels)
         plt.xlabel('time')
         plt.ylabel('values')
@@ -115,7 +132,7 @@ class Visualization:
         else:
             plt.close()
 
-    def show_forecast(self, display=True) -> None:
+    def show_forecast(self, aggregated_only=False, display=True) -> None:
         """
         Plots raw data and forecasted values (for future dates) on same graph.
         """
@@ -125,7 +142,23 @@ class Visualization:
         labels = ['Actuals_s' + str(i) for i in range(1, n_signals + 1)]
         ax.plot(self.__signal.data, c='gray')
         last_obs = self.__signal.data.iloc[-1:]
-        for model in self.__signal.models.keys():
+        if aggregated_only:
+            if 'AggregatedModel' not in self.__signal.models.keys():
+                raise Exception('No predictions have been computed with aggregated model')
+            else:
+                to_plot = ['AggregatedModel']
+                for i, unit in enumerate(self.__signal.data.columns):
+                    itv = self.__signal.models['AggregatedModel']['forecast_interval']
+                    bounds = pd.DataFrame(index=self.__signal.models['AggregatedModel']['forecast_interval'].index)
+                    bounds['lower'] = [interval[0] for interval in itv[unit].values]
+                    bounds['upper'] = [interval[1] for interval in itv[unit].values]
+                    ax.plot(bounds, color='green', linestyle='--')
+                    ax.fill_between(bounds.index, bounds['lower'], bounds['upper'], color='green', alpha=0.3)
+                    labels += [f'lower_s{str(i + 1)}', f'upper_s{str(i + 1)}', f'interval_s{str(i + 1)}']
+        else:
+            to_plot = self.__signal.models.keys()
+
+        for model in to_plot:
             if 'forecast' not in self.__signal.models[model]:
                 warnings.warn(f'No forecasts have been computed with {model}')
                 continue
@@ -136,6 +169,7 @@ class Visualization:
             ax.plot(pred)
             list_model_label = [model + '_s' + str(i) for i in range(1, n_signals + 1)]
             labels += list_model_label
+
         ax.legend(labels)
         plt.xlabel('time')
         plt.ylabel('values')

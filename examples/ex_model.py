@@ -53,7 +53,7 @@ if __name__ == '__main__':
     # --- Aggregated Model ---
     signal.apply_aggregated_model([AutoARIMA(), ExponentialSmoothing()], save_model=True)
     signal.compute_scores(axis=1)
-    Visualization(signal).show_predictions()
+    Visualization(signal).show_predictions(aggregated_only=True)
 
     # --- Forecast ---
     signal.forecast("AggregatedModel", 100, save_model=True)
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     signal.forecast("ExponentialSmoothing", 100, save_model=True)
 
     # --- Visualize forecasts ---
-    Visualization(signal).show_forecast()
+    Visualization(signal).show_forecast(aggregated_only=True)
 
     # ----- Multivariate -----
 
@@ -105,46 +105,3 @@ if __name__ == '__main__':
 
     # --- Visualize forecasts ---
     Visualization(signal_m).show_forecast()
-
-
-    # ---- ESSAI INTERVALLE DE CONFIANCE ----
-
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-    variance_arima = np.var(signal.models['AutoARIMA']['predictions'].values())
-    variance_exp = np.var(signal.models['ExponentialSmoothing']['predictions'].values())
-    std_arima = np.std(signal.models['AutoARIMA']['predictions'].values())
-    std_exp = np.std(signal.models['ExponentialSmoothing']['predictions'].values())
-    variance_agregee = (signal.models['AggregatedModel']['weights']['AutoARIMA'].values[0] ** 2 * variance_arima) + (
-                signal.models['AggregatedModel']['weights']['ExponentialSmoothing'].values[0] ** 2 * variance_exp)
-    std_agregee = np.sqrt(variance_agregee)
-    alpha = 0.05
-    z_critical = 1.96
-    margin_of_error = z_critical * std_agregee
-    lower_bound = signal.models['AggregatedModel']['predictions'] - margin_of_error
-    upper_bound = signal.models['AggregatedModel']['predictions'] + margin_of_error
-
-    # Créez le graphique
-    plt.figure(figsize=(10, 6))
-    pred = pd.DataFrame(signal.models['AggregatedModel']['predictions'].values())
-    pred.columns = signal.models['AggregatedModel']['predictions'].columns
-    pred.index = signal.models['AggregatedModel']['predictions'].time_index
-    plt.plot(pred)
-    plt.fill_between(lower_bound.time_index, lower_bound.values()[:, 0], upper_bound.values()[:, 0], color='green', alpha=0.6,
-                     label="Intervalle de confiance")
-
-    # Personnalisez le graphique
-    plt.xlabel("Dates")
-    plt.ylabel("Valeurs")
-    plt.title("Prédiction de la série temporelle avec intervalle de confiance")
-    plt.legend()
-
-    # Affichez le graphique
-    plt.show()
-
-
-
-
-
-
