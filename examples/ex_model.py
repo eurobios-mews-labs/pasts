@@ -1,7 +1,7 @@
 import pandas as pd
 
 from darts.datasets import AirPassengersDataset, AustralianTourismDataset
-from darts.models import AutoARIMA, Prophet, ExponentialSmoothing, XGBModel, VARIMA
+from darts.models import AutoARIMA, ExponentialSmoothing, XGBModel, VARIMA
 from darts.utils.utils import ModelMode, SeasonalityMode
 
 from pasts.signal import Signal
@@ -33,15 +33,14 @@ if __name__ == '__main__':
     signal.apply_operations(['trend', 'seasonality'])
     Visualization(signal).plot_signal()
 
-    signal.apply_model(ExponentialSmoothing())
+    signal.apply_model(ExponentialSmoothing(), save_model=True)
 
-    signal.apply_model(AutoARIMA())
-    signal.apply_model(Prophet())
+    signal.apply_model(AutoARIMA(), save_model=True)
 
     # If trend and seasonality have been removed, cannot perform this gridsearch
     param_grid = {'trend': [ModelMode.ADDITIVE, ModelMode.MULTIPLICATIVE, ModelMode.NONE],
-                 'seasonal': [SeasonalityMode.ADDITIVE, SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.NONE],
-                 }
+                  'seasonal': [SeasonalityMode.ADDITIVE, SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.NONE],
+                  }
     signal.apply_model(ExponentialSmoothing(), gridsearch=True, parameters=param_grid)
 
     # --- Compute scores ---
@@ -52,18 +51,17 @@ if __name__ == '__main__':
     Visualization(signal).show_predictions()
 
     # --- Aggregated Model ---
-    signal.apply_aggregated_model([AutoARIMA(), Prophet()])
+    signal.apply_aggregated_model([AutoARIMA(), ExponentialSmoothing()], save_model=True)
     signal.compute_scores(axis=1)
-    Visualization(signal).show_predictions()
+    Visualization(signal).show_predictions(aggregated_only=True)
 
     # --- Forecast ---
-    signal.forecast("Prophet", 100)
-    signal.forecast("AggregatedModel", 100)
-    signal.forecast("AutoARIMA", 100)
-    signal.forecast("ExponentialSmoothing", 100)
+    signal.forecast("AggregatedModel", 100, save_model=True)
+    signal.forecast("AutoARIMA", 100, save_model=True)
+    signal.forecast("ExponentialSmoothing", 100, save_model=True)
 
     # --- Visualize forecasts ---
-    Visualization(signal).show_forecast()
+    Visualization(signal).show_forecast(aggregated_only=True)
 
     # ----- Multivariate -----
 
