@@ -1,5 +1,7 @@
 # Python AnalySis for Time Series
 
+[![pytest](https://github.com/eurobios-mews-labs/pasts/actions/workflows/pytest.yml/badge.svg?event=push)](https://docs.pytest.org)
+
 This package aims to structure the way time series analysis and forecasting is done. 
 
 #### Purpose of the Package 
