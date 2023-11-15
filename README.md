@@ -24,6 +24,7 @@ and analysis methods for time series in one unified library.
    - Auto regression models (ARIMA, SARIMA, ....)
    - etc.
 
+
 #### Installation 
 The package can be installed by :
 ```bash
