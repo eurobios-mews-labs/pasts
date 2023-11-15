@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pasts"
-version = "0.0.1"
+version = "2023.3.1"
 description = "unified collections of models to analyze a time series"
 authors = ["Rawya Zreik <rzreik@eurobios.com>", "Juliette Veillon <juliette.veillon@eurobios.com>"]
 readme = "README.md"
