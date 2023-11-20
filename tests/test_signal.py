@@ -131,7 +131,7 @@ def test_properties(get_univariate_data, get_multivariate_data):
     assert signal.properties['shape'] == (144, 1)
     assert signal.properties['is_univariate'] == True
     assert len(signal.properties) == 5
-    signal_m = Signal(get_multivariate_data)
+    signal_m = Signal(get_multivariate_data, 'tests')
     assert signal_m.properties['is_univariate'] == False
 
 
