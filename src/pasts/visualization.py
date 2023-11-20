@@ -13,6 +13,22 @@ import warnings
 import pandas as pd
 from matplotlib import pyplot as plt
 from pandas.plotting import autocorrelation_plot
+import plotly.graph_objects as go
+import matplotlib
+import random
+
+colors = [
+    '#1f77b4',  # muted blue
+    '#ff7f0e',  # safety orange
+    '#2ca02c',  # cooked asparagus green
+    '#d62728',  # brick red
+    '#9467bd',  # muted purple
+    '#8c564b',  # chestnut brown
+    '#e377c2',  # raspberry yogurt pink
+    '#7f7f7f',  # middle gray
+    '#bcbd22',  # curry yellow-green
+    '#17becf'   # blue-teal
+]
 
 
 class Visualization:
@@ -106,8 +122,8 @@ class Visualization:
             else:
                 to_plot = ['AggregatedModel']
                 for i, unit in enumerate(self.__signal.data.columns):
-                    itv = self.__signal.models['AggregatedModel']['confidence_interval']
-                    bounds = pd.DataFrame(index=self.__signal.models['AggregatedModel']['confidence_interval'].index)
+                    itv = self.__signal.models['AggregatedModel']['test_confidence_interval']
+                    bounds = pd.DataFrame(index=self.__signal.models['AggregatedModel']['test_confidence_interval'].index)
                     bounds['lower'] = [interval[0] for interval in itv[unit].values]
                     bounds['upper'] = [interval[1] for interval in itv[unit].values]
                     ax.plot(bounds, color='green', linestyle='--')
@@ -132,6 +148,67 @@ class Visualization:
         else:
             plt.close()
 
+    def show_predictions_plotly(self):
+        """
+        Plots raw data and predicted values on the same Plotly graph with confidence intervals.
+        """
+        if not self.__signal.models:
+            raise Exception('No predictions have been computed.')
+
+        fig = go.Figure()
+
+        # Plot actuals
+        for i, unit in enumerate(self.__signal.data.columns):
+            fig.add_trace(go.Scatter(x=self.__signal.data.index, y=self.__signal.data[unit], mode='lines',
+                                     name=f'Actual_s{i + 1}', line=dict(color='#7f7f7f')))
+
+        # Plot predictions and confidence intervals
+        j = 0
+        for model_name, model_data in self.__signal.models.items():
+
+            pred = model_data['predictions']
+            time_index = pred.time_index
+            pred = pred.pd_dataframe()
+
+            # Plot predictions
+            for i, unit in enumerate(pred.columns):
+                if j < len(colors):
+                    trace_color = colors[j]
+                else:
+                    colors_ = dict(matplotlib.colors.cnames.items())
+                    hex_colors = tuple(colors_.values())
+                    trace_color = random.choice(hex_colors)
+
+                trace_pred = go.Scatter(x=time_index, y=pred[unit], mode='lines', name=f'{model_name}_s{i + 1}',
+                                        line=dict(color=trace_color))
+                fig.add_trace(trace_pred)
+
+                # Plot confidence interval
+                itv = model_data['test_confidence_interval'][unit]
+                bounds = pd.DataFrame(index=time_index)
+                bounds['lower'] = [interval[0] for interval in itv.values]
+                bounds['upper'] = [interval[1] for interval in itv.values]
+
+                fig.add_trace(go.Scatter(x=time_index, y=bounds['lower'], mode='lines',
+                                         line=dict(color=trace_color, dash='dash'), showlegend=False,
+                                         legendgroup=f'CI_{model_name}_s{i+1}', name=f'CI_{model_name}_s{i+1}'))
+                fig.add_trace(go.Scatter(x=time_index, y=bounds['upper'], mode='lines',
+                                         line=dict(color=trace_color, dash='dash'), fill='tonexty',
+                                         fillcolor=f'rgba{tuple(int(trace_color.lstrip("#")[i:i+2], 16) for i in (0, 2, 4)) + (0.3,)}',
+                                         legendgroup=f'CI_{model_name}_s{i+1}', name=f'CI_{model_name}_s{i+1}'))
+                j += 1
+
+        # Configure layout
+        fig.update_layout(
+            title='Predictions with Confidence Intervals',
+            xaxis_title='Time',
+            yaxis_title='Values',
+            showlegend=True
+        )
+
+        # Show the figure
+        fig.show()
+
     def show_forecast(self, aggregated_only=False, display=True) -> None:
         """
         Plots raw data and forecasted values (for future dates) on same graph.
@@ -148,8 +225,9 @@ class Visualization:
             else:
                 to_plot = ['AggregatedModel']
                 for i, unit in enumerate(self.__signal.data.columns):
-                    itv = self.__signal.models['AggregatedModel']['forecast_interval']
-                    bounds = pd.DataFrame(index=self.__signal.models['AggregatedModel']['forecast_interval'].index)
+                    itv = self.__signal.models['AggregatedModel']['forecast_confidence_interval']
+                    bounds = pd.DataFrame(index=self.__signal.models['AggregatedModel'][
+                        'forecast_confidence_interval'].index)
                     bounds['lower'] = [interval[0] for interval in itv[unit].values]
                     bounds['upper'] = [interval[1] for interval in itv[unit].values]
                     ax.plot(bounds, color='green', linestyle='--')
@@ -177,3 +255,70 @@ class Visualization:
             plt.show()
         else:
             plt.close()
+
+    def show_forecast_plotly(self):
+        """
+        Plots raw data and predicted future values on the same Plotly graph with confidence intervals.
+        """
+        if not self.__signal.models:
+            raise Exception('No predictions have been computed.')
+
+        fig = go.Figure()
+
+        # Plot actuals
+        for i, unit in enumerate(self.__signal.data.columns):
+            fig.add_trace(go.Scatter(x=self.__signal.data.index, y=self.__signal.data[unit], mode='lines',
+                                     name=f'Actual_s{i + 1}', line=dict(color='#7f7f7f')))
+        last_obs = self.__signal.data.iloc[-1:]
+
+        # Plot predictions and confidence intervals
+        j = 0
+        for model_name, model_data in self.__signal.models.items():
+
+            if 'forecast' not in self.__signal.models[model_name]:
+                warnings.warn(f'No forecasts have been computed with {model_name}')
+                continue
+
+            pred = pd.DataFrame(model_data['forecast'].values())
+            pred.columns = model_data['forecast'].columns
+            pred.index = model_data['forecast'].time_index
+            pred = pd.concat([last_obs, pred])
+
+            # Plot predictions
+            for i, unit in enumerate(pred.columns):
+                if j < len(colors):
+                    trace_color = colors[j]
+                else:
+                    colors_ = dict(matplotlib.colors.cnames.items())
+                    hex_colors = tuple(colors_.values())
+                    trace_color = random.choice(hex_colors)
+
+                trace_pred = go.Scatter(x=pred.index, y=pred[unit], mode='lines', name=f'{model_name}_s{i + 1}',
+                                        line=dict(color=trace_color))
+                fig.add_trace(trace_pred)
+
+                # Plot confidence interval
+                itv = model_data['forecast_confidence_interval'][unit]
+                bounds = pd.DataFrame(index=pred.index[1:])
+                bounds['lower'] = [interval[0] for interval in itv.values]
+                bounds['upper'] = [interval[1] for interval in itv.values]
+
+                fig.add_trace(go.Scatter(x=itv.index, y=bounds['lower'], mode='lines',
+                                         line=dict(color=trace_color, dash='dash'), showlegend=False,
+                                         legendgroup=f'CI_{model_name}_s{i+1}', name=f'CI_{model_name}_s{i+1}'))
+                fig.add_trace(go.Scatter(x=itv.index, y=bounds['upper'], mode='lines',
+                                         line=dict(color=trace_color, dash='dash'), fill='tonexty',
+                                         fillcolor=f'rgba{tuple(int(trace_color.lstrip("#")[i:i+2], 16) for i in (0, 2, 4)) + (0.3,)}',
+                                         legendgroup=f'CI_{model_name}_s{i+1}', name=f'CI_{model_name}_s{i+1}'))
+                j += 1
+
+        # Configure layout
+        fig.update_layout(
+            title='Forecasts with Confidence Intervals',
+            xaxis_title='Time',
+            yaxis_title='Values',
+            showlegend=True
+        )
+
+        # Show the figure
+        fig.show()

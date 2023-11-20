@@ -186,31 +186,23 @@ class AggregatedModel(ModelAbstract):
                 for ref in weights.index.get_level_values(1).unique():
                     weights.loc[(date, ref)][model_] = 1 / mean_squared_error(df_test_temp[ref], df_pred_temp[ref],
                                                                               squared=False)
-        perf = 1 / weights
-        std = {}
-        for model_ in perf.columns:
-            std[model_] = np.std(perf[model_])
+
         for i in weights.index:
             weights.loc[i] = weights.loc[i] / (weights.loc[i].sum())
         weights = weights.groupby('Unité')[list(model.keys())].mean()
 
         df_ag = pd.DataFrame(index=self.signal.models[list(model.keys())[0]]['predictions'].time_index,
                              columns=self.signal.models[list(model.keys())[0]]['predictions'].columns)
-        conf_itv = df_ag.copy()
+
         for ref in df_ag.columns:
             res = [0 for _ in df_ag.index]
-            itv_inf = [self.signal.data.max().values**4 for _ in df_ag.index]
-            itv_sup = [0 for _ in df_ag.index]
             for model_ in model.keys():
                 pred = self.signal.models[model_]['predictions'].pd_dataframe()[ref].values
                 res += pred * weights.loc[ref, model_]
-                itv_inf = [min(itv_inf[i], pred[i] + (-1.96) * std[model_]) for i in range(len(itv_inf))]
-                itv_sup = [max(itv_sup[i], pred[i] + 1.96 * std[model_]) for i in range(len(itv_sup))]
             df_ag[ref] = res
 
-            conf_itv[ref] = [[itv_inf[i], itv_sup[i]] for i in range(len(itv_inf))]
-        return {'predictions': TimeSeries.from_dataframe(df_ag), 'confidence_interval': conf_itv, 'weights': weights,
-                'models': model, 'scores': {'unit_wise': {}, 'time_wise': {}}, 'std_test': std}
+        return {'predictions': TimeSeries.from_dataframe(df_ag), 'weights': weights,
+                'models': model, 'scores': {'unit_wise': {}, 'time_wise': {}}}
 
     def compute_final_estimator(self, model_name=''):
         """
@@ -227,18 +219,20 @@ class AggregatedModel(ModelAbstract):
         dict_models = self.signal.models['AggregatedModel']['models']
         df_ag = pd.DataFrame(index=self.signal.models[list(dict_models.keys())[0]]['forecast'].time_index,
                              columns=self.signal.models[list(dict_models.keys())[0]]['forecast'].columns)
-        conf_itv = df_ag.copy()
-        std = self.signal.models['AggregatedModel']['std_test']
+        # conf_itv = df_ag.copy()
+        # std = self.signal.models['AggregatedModel']['std_test']
         for ref in df_ag.columns:
             res = [0 for _ in df_ag.index]
-            itv_inf = [self.signal.data.max().values ** 4 for _ in df_ag.index]
-            itv_sup = [0 for _ in df_ag.index]
+            # itv_inf = [0 for _ in df_ag.index]
+            # itv_sup = [0 for _ in df_ag.index]
             for model_ in dict_models.keys():
                 pred = self.signal.models[model_]['forecast'].pd_dataframe()[ref].values
                 res += pred * self.signal.models['AggregatedModel']['weights'].loc[ref, model_]
-                itv_inf = [min(itv_inf[i], pred[i] + (-1.96) * std[model_]) for i in range(len(itv_inf))]
-                itv_sup = [max(itv_sup[i], pred[i] + 1.96 * std[model_]) for i in range(len(itv_sup))]
+                # itv_inf = [itv_inf[i] + self.signal.models['AggregatedModel']['weights'].loc[ref, model_] * (
+                #             pred[i] + (-1.96) * std[model_] * np.sqrt(i)) for i in range(len(itv_inf))]
+                # itv_sup = [itv_sup[i] + self.signal.models['AggregatedModel']['weights'].loc[ref, model_] * (
+                #             pred[i] + 1.96 * std[model_] * np.sqrt(i)) for i in range(len(itv_sup))]
             df_ag[ref] = res
-            conf_itv[ref] = [[itv_inf[i], itv_sup[i]] for i in range(len(itv_inf))]
+            # conf_itv[ref] = [[itv_inf[i], itv_sup[i]] for i in range(len(itv_inf))]
 
-        return TimeSeries.from_dataframe(df_ag), conf_itv
+        return TimeSeries.from_dataframe(df_ag)  # , conf_itv
