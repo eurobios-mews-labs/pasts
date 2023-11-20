@@ -17,6 +17,7 @@ import os
 import glob
 import re
 
+import numpy as np
 import pandas as pd
 from darts import TimeSeries
 
@@ -73,7 +74,7 @@ class Signal(ABC):
         Generates forecasts for future dates.
     """
 
-    def __init__(self, data: pd.DataFrame):
+    def __init__(self, data: pd.DataFrame, path: str):
         """
         Constructs all the necessary attributes for the signal object.
 
@@ -82,7 +83,13 @@ class Signal(ABC):
         data : pd.Dataframe
                 Dataframe of time series with time as index and one or several entities as columns.
                 Index must be of type DatetimeIndex.
+        path : str
+                The path to the directory where the Signal data will be stored. The directory may or
+                may not exist. If it doesn't exist, it will be created automatically.
         """
+        if not os.path.exists(path):
+            os.makedirs(path)
+        self.path = path
         self.__data = data
         self.__rest_data = data.copy()
         self.__operation_train = None
@@ -247,8 +254,10 @@ class Signal(ABC):
         parameters : dict, optional
                 Parameters to test if a gridsearch is performed (default is None)
         save_model : bool, optional
-                Whether to save the model in a file (default is False).
+                Whether to save the model in a file in Signal.path (default is False).
                 When True, also saves data, train and test set, and transformed data (if it exists).
+                If the same model with different parameters has previously been saved from the same Signal object,
+                the file will be overwritten.
 
         Returns
         -------
@@ -256,11 +265,12 @@ class Signal(ABC):
         """
         self.models[model.__class__.__name__] = Model(self).apply(copy.deepcopy(model), gridsearch, parameters)
         if save_model:
-            joblib.dump(self.models[model.__class__.__name__], f'{model.__class__.__name__}_train_jlib')
-            joblib.dump(self.rest_data, 'rest_data_jlib')
-            joblib.dump(self.rest_train_data, 'rest_train_data_jlib')
-            joblib.dump(self.test_data, 'test_data_jlib')
-            joblib.dump(self.train_data, 'train_data_jlib')
+            joblib.dump(self.models[model.__class__.__name__], os.path.join(self.path,
+                                                                            f'{model.__class__.__name__}_train_jlib'))
+            joblib.dump(self.rest_data, os.path.join(self.path, 'rest_data_jlib'))
+            joblib.dump(self.rest_train_data, os.path.join(self.path, 'rest_train_data_jlib'))
+            joblib.dump(self.test_data, os.path.join(self.path, 'test_data_jlib'))
+            joblib.dump(self.train_data, os.path.join(self.path, 'train_data_jlib'))
 
     def compute_scores(self, list_metrics: list[str] = None, axis=1) -> None:
         """
@@ -306,8 +316,10 @@ class Signal(ABC):
                 Whether to refit estimators even if they were previously fitted (default is False).
                 Ignored for estimators not previously fitted.
         save_model : bool, optional
-                Whether to save the model in a file (default is False).
+                Whether to save the model in a file in Signal.path (default is False).
                 When True, also saves data, train and test set, and transformed data (if it exists).
+                If the same model with different parameters has previously been saved from the same Signal object,
+                the file will be overwritten.
 
         Returns
         -------
@@ -323,14 +335,14 @@ class Signal(ABC):
                     print(f'{model_name} has not yet been fitted. Fitting {model_name}...')
                     self.apply_model(model)
                     if save_model:
-                        joblib.dump(self.models[model_name], f'{model_name}_train_jlib')
+                        joblib.dump(self.models[model_name], os.path.join(self.path, f'{model_name}_train_jlib'))
         self.models['AggregatedModel'] = AggregatedModel(self).apply(dict_models)
         if save_model:
-            joblib.dump(self.models['AggregatedModel'], 'AggregatedModel_train_jlib')
-            joblib.dump(self.rest_data, 'rest_data_jlib')
-            joblib.dump(self.rest_train_data, 'rest_train_data_jlib')
-            joblib.dump(self.test_data, 'test_data_jlib')
-            joblib.dump(self.train_data, 'train_data_jlib')
+            joblib.dump(self.models['AggregatedModel'], os.path.join(self.path, 'AggregatedModel_train_jlib'))
+            joblib.dump(self.rest_data, os.path.join(self.path, 'rest_data_jlib'))
+            joblib.dump(self.rest_train_data, os.path.join(self.path, 'rest_train_data_jlib'))
+            joblib.dump(self.test_data, os.path.join(self.path, 'test_data_jlib'))
+            joblib.dump(self.train_data, os.path.join(self.path, 'train_data_jlib'))
 
     def forecast(self, model_name: str, horizon: int, save_model: bool = False) -> None:
         """
@@ -346,8 +358,10 @@ class Signal(ABC):
         horizon : int
                 Horizon of prediction.
         save_model : bool, optional
-                Whether to save the model in a file (default is False).
+                Whether to save the model in a file in Signal.path (default is False).
                 When True, also saves data, train and test set, and transformed data (if it exists).
+                If the same model with different parameters has previously been saved from the same Signal object,
+                the file will be overwritten.
 
         Returns
         -------
@@ -366,16 +380,15 @@ class Signal(ABC):
                         self.models[model]['forecast'] = TimeSeries.from_dataframe(
                             self.operation_data.transform(self.models[model]['forecast'].pd_dataframe()))
                 if save_model:
-                    joblib.dump(self.models[model], f'{model}_final_jlib')
+                    joblib.dump(self.models[model], os.path.join(self.path, f'{model}_final_jlib'))
 
-            self.models['AggregatedModel']['forecast'], self.models['AggregatedModel']['forecast_interval'] = \
-                AggregatedModel(self).compute_final_estimator()
+            self.models['AggregatedModel']['forecast'] = AggregatedModel(self).compute_final_estimator()
             if save_model:
-                joblib.dump(self.models['AggregatedModel'], 'AggregatedModel_final_jlib')
-                joblib.dump(self.rest_data, 'rest_data_jlib')
-                joblib.dump(self.rest_train_data, 'rest_train_data_jlib')
-                joblib.dump(self.test_data, 'test_data_jlib')
-                joblib.dump(self.train_data, 'train_data_jlib')
+                joblib.dump(self.models['AggregatedModel'], os.path.join(self.path, 'AggregatedModel_final_jlib'))
+                joblib.dump(self.rest_data, os.path.join(self.path, 'rest_data_jlib'))
+                joblib.dump(self.rest_train_data, os.path.join(self.path, 'rest_train_data_jlib'))
+                joblib.dump(self.test_data, os.path.join(self.path, 'test_data_jlib'))
+                joblib.dump(self.train_data, os.path.join(self.path, 'train_data_jlib'))
 
         else:
             if model_name not in self.models.keys():
@@ -389,19 +402,73 @@ class Signal(ABC):
                     self.models[model_name]['forecast'] = TimeSeries.from_dataframe(
                         self.operation_data.transform(self.models[model_name]['forecast'].pd_dataframe()))
             if save_model:
-                joblib.dump(self.models[model_name], f'{model_name}_final_jlib')
-                joblib.dump(self.rest_data, 'rest_data_jlib')
-                joblib.dump(self.rest_train_data, 'rest_train_data_jlib')
-                joblib.dump(self.test_data, 'test_data_jlib')
-                joblib.dump(self.train_data, 'train_data_jlib')
+                joblib.dump(self.models[model_name], os.path.join(self.path, f'{model_name}_final_jlib'))
+                joblib.dump(self.rest_data, os.path.join(self.path, 'rest_data_jlib'))
+                joblib.dump(self.rest_train_data, os.path.join(self.path, 'rest_train_data_jlib'))
+                joblib.dump(self.test_data, os.path.join(self.path, 'test_data_jlib'))
+                joblib.dump(self.train_data, os.path.join(self.path, 'train_data_jlib'))
+
+    def _conf_interval_test(self, model_name: str, window_size: int = 6):
+        if model_name not in self.models.keys():
+            raise AttributeError(f'{model_name} has not been fitted.')
+        pred = self.models[model_name]['predictions']
+        df_itv = pd.DataFrame(index=pred.time_index, columns=pred.columns)
+        df_residuals = df_itv.copy()
+        std = {}
+        for ref in pred.columns:
+            errors = self.test_data[ref].values - pred[ref].values()[:, 0]
+            df_residuals[ref] = errors
+
+            std[ref] = pd.Series(errors).rolling(window=window_size).std().values
+
+            weights = np.arange(1, len(pred) + 1, dtype=float)
+
+            itv_inf = pred[ref].values()[:, 0] - 1.96 * std[ref] * np.sqrt(weights)
+            itv_sup = pred[ref].values()[:, 0] + 1.96 * std[ref] * np.sqrt(weights)
+
+            df_itv[ref] = list(zip(itv_inf, itv_sup))
+        self.models[model_name]['test_confidence_interval'] = df_itv
+        self.models[model_name]['test_residuals'] = df_residuals
+
+    def _conf_interval_forecast(self, model_name: str):
+        if model_name not in self.models.keys():
+            raise AttributeError(f'{model_name} has not been fitted.')
+        if 'forecast' not in self.models[model_name].keys():
+            raise AttributeError(f'No forecasts have been computed with model {model_name}.')
+
+        pred = self.models[model_name]['forecast']
+        df_itv = pd.DataFrame(index=pred.time_index, columns=pred.columns)
+
+        for ref in pred.columns:
+            std = np.std(self.models[model_name]['test_residuals'][ref])
+
+            weights = np.arange(1, len(pred) + 1, dtype=float)
+
+            itv_inf = pred[ref].values()[:, 0] - 1.96 * std * np.sqrt(weights)
+            itv_sup = pred[ref].values()[:, 0] + 1.96 * std * np.sqrt(weights)
+
+            df_itv[ref] = list(zip(itv_inf, itv_sup))
+
+        self.models[model_name]['forecast_confidence_interval'] = df_itv
+
+    def compute_conf_intervals(self, window_size: int = 10, save=False):
+        if not self.models:
+            raise AttributeError('No predictions have been found.')
+        for model_ in self.models.keys():
+            self._conf_interval_test(model_, window_size)
+            if 'forecast' in self.models[model_].keys():
+                self._conf_interval_forecast(model_)
+            if save:
+                joblib.dump(self.models[model_], os.path.join(self.path, f'{model_}_train_jlib'))
+                if 'forecast' in self.models[model_].keys():
+                    joblib.dump(self.models[model_], os.path.join(self.path, f'{model_}_final_jlib'))
 
     def get_saved_models(self) -> None:
         """
-        Gets previously fitted models saved in joblib files and saves them in attribute models.
+        Gets previously fitted models saved in joblib files in Signal.path and saves them in attribute models.
         """
-        path = os.getcwd()
         mod = "*jlib"
-        files = glob.glob(os.path.join(path, mod))
+        files = glob.glob(os.path.join(self.path, mod))
         if not files:
             warnings.warn("No saved models were found.")
         else:

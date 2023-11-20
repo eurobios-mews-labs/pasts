@@ -6,16 +6,16 @@ from pasts.visualization import Visualization
 
 
 def test_errors_visualization(get_univariate_data, get_multivariate_data):
-    signal = Signal(get_univariate_data)
-    signal_m = Signal(get_multivariate_data)
+    signal = Signal(get_univariate_data, 'tests')
+    signal_m = Signal(get_multivariate_data, 'tests')
     with pytest.raises(Exception):
         Visualization(signal_m).acf_plot()
         Visualization(signal).show_predictions()
 
 
 def test_plot_signal(get_univariate_data, get_multivariate_data):
-    signal = Signal(get_univariate_data)
-    signal_m = Signal(get_multivariate_data)
+    signal = Signal(get_univariate_data, 'tests')
+    signal_m = Signal(get_multivariate_data, 'tests')
     Visualization(signal_m).plot_signal(display=False)
     tstamp = '1958-12-01'
     signal.validation_split(tstamp)
@@ -24,12 +24,12 @@ def test_plot_signal(get_univariate_data, get_multivariate_data):
 
 
 def test_acf_plot(get_univariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     Visualization(signal).acf_plot()
 
 
 def test_show_predictions(get_univariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     tstamp = '1958-12-01'
     signal.validation_split(tstamp)
     signal.apply_model(ExponentialSmoothing())
@@ -37,7 +37,7 @@ def test_show_predictions(get_univariate_data):
 
 
 def test_show_forecast(get_univariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     tstamp = '1958-12-01'
     signal.validation_split(tstamp)
     signal.apply_aggregated_model([AutoARIMA(), ExponentialSmoothing()])
