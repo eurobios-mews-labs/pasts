@@ -7,7 +7,7 @@ from pasts.signal import Signal
 
 
 def test_validation_split(get_univariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     tstamp = '1949-01-01'
     with pytest.raises(ValueError):
         signal.validation_split(tstamp)
@@ -18,7 +18,7 @@ def test_validation_split(get_univariate_data):
 
 
 def test_apply_model(get_univariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     tstamp = '1958-12-01'
     signal.validation_split(tstamp)
     signal.apply_model(ExponentialSmoothing())
@@ -33,7 +33,7 @@ def test_apply_model(get_univariate_data):
 
 
 def test_apply_model_grid(get_univariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     tstamp = '1958-12-01'
     signal.validation_split(tstamp)
     with pytest.raises(Exception):
@@ -51,7 +51,7 @@ def test_apply_model_grid(get_univariate_data):
 
 
 def test_aggregated_model(get_univariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     tstamp = '1958-12-01'
     signal.validation_split(tstamp)
     signal.apply_aggregated_model([AutoARIMA(), ExponentialSmoothing()])
@@ -63,7 +63,7 @@ def test_aggregated_model(get_univariate_data):
 
 
 def test_scores_unit(get_univariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     tstamp = '1958-12-01'
     signal.validation_split(tstamp)
     signal.apply_aggregated_model([AutoARIMA(), ExponentialSmoothing()])
@@ -89,7 +89,7 @@ def test_scores_unit(get_univariate_data):
 
 
 def test_scores_time(get_univariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     tstamp = '1958-12-01'
     signal.validation_split(tstamp)
     signal.apply_aggregated_model([AutoARIMA(), ExponentialSmoothing()])
@@ -111,7 +111,7 @@ def test_scores_time(get_univariate_data):
 
 
 def test_forecast(get_univariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     tstamp = '1958-12-01'
     signal.validation_split(tstamp)
     with pytest.raises(Exception):
@@ -127,7 +127,7 @@ def test_forecast(get_univariate_data):
 
 
 def test_properties(get_univariate_data, get_multivariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     assert signal.properties['shape'] == (144, 1)
     assert signal.properties['is_univariate'] == True
     assert len(signal.properties) == 5
@@ -136,42 +136,42 @@ def test_properties(get_univariate_data, get_multivariate_data):
 
 
 def test_adfuller(get_univariate_data, get_multivariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     signal.apply_stat_test('stationary')
     assert 'stationary: adfuller' in signal.tests_stat.keys()
     assert not signal.tests_stat['stationary: adfuller'][0]
     assert signal.tests_stat['stationary: adfuller'][1] > 0.95
-    signal_m = Signal(get_multivariate_data)
+    signal_m = Signal(get_multivariate_data, 'tests')
     with pytest.raises(TypeError):
         signal_m.apply_stat_test('stationary')
 
 
 def test_kpss(get_univariate_data, get_multivariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     signal.apply_stat_test('stationary', 'kpss')
     assert 'stationary: kpss' in signal.tests_stat.keys()
     assert not signal.tests_stat['stationary: kpss'][0]
     assert signal.tests_stat['stationary: kpss'][1] < 0.05
-    signal_m = Signal(get_multivariate_data)
+    signal_m = Signal(get_multivariate_data, 'tests')
     with pytest.raises(TypeError):
         signal_m.apply_stat_test('stationary', 'kpss')
 
 
 def test_seasonality(get_univariate_data, get_multivariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     signal.apply_stat_test('seasonality')
     assert 'seasonality: check_seasonality' in signal.tests_stat.keys()
     assert signal.tests_stat['seasonality: check_seasonality'][1] == (True, 12)
-    signal_m = Signal(get_multivariate_data)
+    signal_m = Signal(get_multivariate_data, 'tests')
     with pytest.raises(TypeError):
         signal_m.apply_stat_test('seasonality')
 
 
 def test_causality(get_univariate_data, get_multivariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     with pytest.raises(TypeError):
         signal.apply_stat_test('causality')
-    signal_m = Signal(get_multivariate_data)
+    signal_m = Signal(get_multivariate_data, 'tests')
     signal_m.apply_stat_test('causality')
     assert len(signal_m.tests_stat['causality: grangercausalitytests']) == math.perm(3, 2)
     for t in signal_m.tests_stat['causality: grangercausalitytests'].keys():
@@ -182,7 +182,7 @@ def test_causality(get_univariate_data, get_multivariate_data):
 
 
 def test_operations(get_univariate_data):
-    signal = Signal(get_univariate_data)
+    signal = Signal(get_univariate_data, 'tests')
     with pytest.raises(Exception):
         signal.apply_operations(['trend', 'seasonality'])
     tstamp = '1958-12-01'
